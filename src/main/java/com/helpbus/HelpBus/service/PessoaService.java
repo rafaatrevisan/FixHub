@@ -14,19 +14,4 @@ public class PessoaService {
     @Autowired
     private PessoaRepository pessoaRepository;
 
-    public Pessoa salvarPessoa(Pessoa pessoa) {
-        return pessoaRepository.save(pessoa);
-    }
-
-    public List<Pessoa> listarPessoas() {
-        return pessoaRepository.findAll();
-    }
-
-    public Optional<Pessoa> buscarPessoaPorId(Integer id) {
-        return pessoaRepository.findById(id);
-    }
-
-    public void deletarPessoa(Integer id) {
-        pessoaRepository.deleteById(id);
-    }
 }
