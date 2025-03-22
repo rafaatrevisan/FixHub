@@ -1,5 +1,6 @@
 package com.helpbus.HelpBus.model.entity;
 
+import com.helpbus.HelpBus.model.enums.Cargo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,11 +23,21 @@ public class Pessoa {
     @Column(nullable = false, length = 255)
     private String nome;
 
-    @Column(name = "data_nascimento", updatable = false)
+    @Column(name = "data_nascimento", nullable = false)
     private LocalDate dataNascimento;
 
     @Column(nullable = false, length = 11)
     private String telefone;
 
-    //TODO: precisa mapear a entidade id_cargo e adicionar validações nos campos (NotEmpty, NotBlank)
+    @Column(name = "id_cargo")
+    private int idCargo;
+
+    @Transient  // Indica que este método não deve ser persistido
+    public Cargo getCargo() {
+        return Cargo.fromId(idCargo);
+    }
+
+    public void setCargo(Cargo cargo) {
+        this.idCargo = cargo.getId();
+    }
 }
