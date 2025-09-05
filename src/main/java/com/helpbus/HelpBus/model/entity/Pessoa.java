@@ -14,6 +14,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "pessoa")
 public class Pessoa {
 
     @Id
@@ -29,15 +30,7 @@ public class Pessoa {
     @Column(nullable = false, length = 11)
     private String telefone;
 
-    @Column(name = "id_cargo")
-    private int idCargo;
-
-    @Transient  // Indica que este método não deve ser persistido
-    public Cargo getCargo() {
-        return Cargo.fromId(idCargo);
-    }
-
-    public void setCargo(Cargo cargo) {
-        this.idCargo = cargo.getId();
-    }
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cargo", nullable = false, length = 50)
+    private Cargo cargo;
 }

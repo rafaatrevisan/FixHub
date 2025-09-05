@@ -18,12 +18,10 @@ public class PessoaService {
     private PessoaRepository pessoaRepository;
 
     public void validarPessoa(Pessoa pessoa) {
-        // Validação para o campo nome
         if (pessoa.getNome() == null || pessoa.getNome().isBlank()) {
             throw new BusinessException("O campo nome é obrigatório");
         }
 
-        // Validação para o campo telefone
         if (pessoa.getTelefone() == null || pessoa.getTelefone().isBlank()) {
             throw new BusinessException("O campo telefone é obrigatório");
         }
@@ -32,7 +30,6 @@ public class PessoaService {
             throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
         }
 
-        // Validação para o campo dataNascimento
         if (pessoa.getDataNascimento() == null) {
             throw new BusinessException("A data de nascimento é obrigatória");
         }
@@ -46,12 +43,10 @@ public class PessoaService {
             throw new BusinessException("A pessoa deve ter pelo menos 16 anos");
         }
 
-        // Verifica se o cargo veio vazio e seta o valor como CLIENTE
         atribuirCargoAutomatico(pessoa);
     }
 
     private boolean isTelefoneValido(String telefone) {
-        // Expressão regular para validar um telefone com 10 ou 11 dígitos (somente números)
         String regex = "^\\d{10,11}$";
         Pattern pattern = Pattern.compile(regex);
         return pattern.matcher(telefone).matches();
