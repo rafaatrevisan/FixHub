@@ -1,8 +1,5 @@
 package com.helpbus.HelpBus.model.enums;
 
-import lombok.Getter;
-
-@Getter
 public enum Cargo {
     CLIENTE(1),
     LIMPEZA(2),
@@ -16,12 +13,7 @@ public enum Cargo {
         this.id = id;
     }
 
-    public static Cargo fromId(int id) {
-        for (Cargo cargo : Cargo.values()) {
-            if (cargo.getId() == id) {
-                return cargo;
-            }
-        }
-        return null;
+    public int getId() {
+        return id;
     }
 }

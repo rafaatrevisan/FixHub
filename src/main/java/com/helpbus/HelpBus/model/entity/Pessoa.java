@@ -8,12 +8,14 @@ import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Table(name = "pessoa")
 public class Pessoa {
 
     @Id
@@ -29,15 +31,15 @@ public class Pessoa {
     @Column(nullable = false, length = 11)
     private String telefone;
 
-    @Column(name = "id_cargo")
-    private int idCargo;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "cargo", nullable = false, length = 50)
+    private Cargo cargo;
 
-    @Transient  // Indica que este método não deve ser persistido
-    public Cargo getCargo() {
-        return Cargo.fromId(idCargo);
-    }
+    @Column(name = "data_cadastro", nullable = false, updatable = false)
+    private LocalDateTime dataCadastro;
 
-    public void setCargo(Cargo cargo) {
-        this.idCargo = cargo.getId();
+    @PrePersist
+    protected void onCreate() {
+        this.dataCadastro = LocalDateTime.now();
     }
 }

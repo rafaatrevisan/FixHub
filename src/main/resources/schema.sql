@@ -1,23 +1,18 @@
-CREATE TABLE cargos (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(50) NOT NULL
-);
-
 CREATE TABLE pessoa (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  nome VARCHAR(255),
-  data_nascimento DATE,
-  telefone VARCHAR(11),
-  id_cargo INT NOT NULL,
-  CONSTRAINT fk_pessoa_cargo FOREIGN KEY (id_cargo) REFERENCES cargos(id)
+  nome VARCHAR(255) NOT NULL,
+  data_nascimento DATE NOT NULL,
+  telefone VARCHAR(11) NOT NULL,
+  cargo VARCHAR(50) NOT NULL,
+  data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE ticket (
   id INT AUTO_INCREMENT PRIMARY KEY,
   data_ticket TIMESTAMP NOT NULL,
   id_usuario INT NOT NULL,
-  status INT,
-  prioridade INT,
+  status VARCHAR(20) NOT NULL,
+  prioridade VARCHAR(20) NOT NULL,
   andar VARCHAR(255),
   localizacao VARCHAR(255),
   descricao_localizacao VARCHAR(255),
@@ -41,6 +36,5 @@ CREATE TABLE usuario (
   id_pessoa INT,
   email VARCHAR(255) UNIQUE,
   senha VARCHAR(255),
-  data_cadastro TIMESTAMP NOT NULL,
   CONSTRAINT fk_usuario_pessoa FOREIGN KEY (id_pessoa) REFERENCES pessoa(id)
 );

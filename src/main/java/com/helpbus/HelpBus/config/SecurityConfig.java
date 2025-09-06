@@ -15,10 +15,13 @@ public class SecurityConfig {
         http
                 .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/public/**").permitAll()  // Permite acesso sem autenticação
-                .anyRequest().authenticated() // Exige autenticação para as demais rotas
+                .antMatchers("/public/**").permitAll()
+                .antMatchers("/h2-console/**").permitAll()
+                .anyRequest().authenticated()
                 .and()
-                .httpBasic(); // Habilita autenticação básica
+                .httpBasic()
+                .and()
+                .headers().frameOptions().sameOrigin();
 
         return http.build();
     }

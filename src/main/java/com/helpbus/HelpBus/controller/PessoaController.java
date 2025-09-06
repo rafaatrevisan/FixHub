@@ -12,10 +12,9 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/api/helpbus/pessoas")
+@RequestMapping("/api/fixhub/pessoas")
 @RequiredArgsConstructor
 public class PessoaController {
 
@@ -50,7 +49,7 @@ public class PessoaController {
                     pessoaRepository.delete(pessoa);
                     return Void.TYPE;
                 })
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
     }
 
     @PutMapping("{id}")
@@ -62,11 +61,12 @@ public class PessoaController {
                         pessoa.setNome(pessoaAtualizada.getNome());
                         pessoa.setDataNascimento(pessoaAtualizada.getDataNascimento());
                         pessoa.setTelefone(pessoaAtualizada.getTelefone());
+                        pessoa.setCargo(pessoaAtualizada.getCargo());
                         pessoaService.validarPessoa(pessoa);
                         pessoaRepository.save(pessoa);
                         return pessoa;
                     })
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
         } catch (BusinessException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
         }
@@ -75,6 +75,6 @@ public class PessoaController {
     @GetMapping("{id}")
     public Pessoa buscarPorId(@PathVariable Integer id){
         return pessoaRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente não encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
     }
 }
