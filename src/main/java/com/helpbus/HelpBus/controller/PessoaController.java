@@ -14,7 +14,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/helpbus/pessoas")
+@RequestMapping("/api/fixhub/pessoas")
 @RequiredArgsConstructor
 public class PessoaController {
 
