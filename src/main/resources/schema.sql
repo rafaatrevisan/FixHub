@@ -3,7 +3,8 @@ CREATE TABLE pessoa (
   nome VARCHAR(255) NOT NULL,
   data_nascimento DATE NOT NULL,
   telefone VARCHAR(11) NOT NULL,
-  cargo VARCHAR(50) NOT NULL
+  cargo VARCHAR(50) NOT NULL,
+  data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE ticket (
@@ -35,6 +36,5 @@ CREATE TABLE usuario (
   id_pessoa INT,
   email VARCHAR(255) UNIQUE,
   senha VARCHAR(255),
-  data_cadastro TIMESTAMP NOT NULL,
   CONSTRAINT fk_usuario_pessoa FOREIGN KEY (id_pessoa) REFERENCES pessoa(id)
 );
