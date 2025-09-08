@@ -1,18 +1,16 @@
 package com.helpbus.HelpBus.controller;
 
 import com.helpbus.HelpBus.model.dto.TicketDTO;
-import com.helpbus.HelpBus.model.entity.Pessoa;
 import com.helpbus.HelpBus.model.entity.Ticket;
 import com.helpbus.HelpBus.model.mapper.TicketMapper;
-import com.helpbus.HelpBus.model.repository.PessoaRepository;
-import com.helpbus.HelpBus.model.repository.TicketRepository;
+import com.helpbus.HelpBus.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
@@ -20,13 +18,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class TicketController {
 
-    private final TicketRepository ticketRepository;
-    private final PessoaRepository pessoaRepository;
+    private final TicketService ticketService;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
     public List<TicketDTO> listarTodos() {
-        return ticketRepository.findAll()
+        return ticketService.getAllTickets()
                 .stream()
                 .map(TicketMapper::toDTO)
                 .collect(Collectors.toList());
@@ -35,46 +32,32 @@ public class TicketController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<TicketDTO> criar(@RequestBody TicketDTO dto) {
-        Pessoa usuario = pessoaRepository.findById(dto.getIdUsuario())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
-
-        Ticket ticket = TicketMapper.toEntity(dto, usuario);
-        Ticket salvo = ticketRepository.save(ticket);
-
+        Ticket ticket = TicketMapper.toEntity(dto, null);
+        Ticket salvo = ticketService.criarTicket(ticket, dto.getIdUsuario());
         return ResponseEntity.ok(TicketMapper.toDTO(salvo));
+    }
+
+    @PutMapping("{id}")
+    public ResponseEntity<?> atualizar(@PathVariable Integer id, @RequestBody TicketDTO dto) {
+        try {
+            Ticket ticket = TicketMapper.toEntity(dto, null);
+            ticketService.atualizarTicket(id, ticket, dto.getIdUsuario());
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                    .status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("erro", e.getMessage()));
+        }
     }
 
     @GetMapping("{id}")
     public TicketDTO buscarPorId(@PathVariable Integer id) {
-        return ticketRepository.findById(id)
-                .map(TicketMapper::toDTO)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
-    }
-
-    @PutMapping("{id}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void atualizar(@PathVariable Integer id, @RequestBody TicketDTO dto) {
-        ticketRepository.findById(id)
-                .map(ticket -> {
-                    Pessoa usuario = pessoaRepository.findById(dto.getIdUsuario())
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
-
-                    Ticket atualizado = TicketMapper.toEntity(dto, usuario);
-                    atualizado.setId(ticket.getId());
-                    ticketRepository.save(atualizado);
-                    return atualizado;
-                })
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
+        return TicketMapper.toDTO(ticketService.getTicketById(id));
     }
 
     @DeleteMapping("{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deletar(@PathVariable Integer id) {
-        ticketRepository.findById(id)
-                .map(ticket -> {
-                    ticketRepository.delete(ticket);
-                    return Void.TYPE;
-                })
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
+        ticketService.deleteTicket(id);
     }
 }
