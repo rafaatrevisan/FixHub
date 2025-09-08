@@ -22,12 +22,12 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "data_ticket", nullable = false)
+    @Column(name = "data_ticket", nullable = false, updatable = false)
     private LocalDateTime dataTicket;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario", nullable = false)
-    private Pessoa usuario; // Pessoa que abriu o ticket
+    private Pessoa usuario;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -51,4 +51,9 @@ public class Ticket {
 
     @Column(name = "imagem", length = 255)
     private String imagem;
+
+    @PrePersist
+    protected void onCreate() {
+        this.dataTicket = LocalDateTime.now();
+    }
 }

@@ -14,10 +14,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class TicketDTO {
-
     private Integer id;
     private LocalDateTime dataTicket;
-    private Integer idUsuario; // referência ao ID da Pessoa
+    private Integer idUsuario;
     private StatusTicket status;
     private PrioridadeTicket prioridade;
     private String andar;
@@ -25,5 +24,4 @@ public class TicketDTO {
     private String descricaoLocalizacao;
     private String descricaoTicketUsuario;
     private String imagem;
-
 }

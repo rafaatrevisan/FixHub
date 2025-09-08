@@ -24,7 +24,7 @@ public class TicketService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
 
         ticket.setUsuario(usuario);
-        ticket.setStatus(StatusTicket.PENDENTE); // Sempre inicia como pendente
+        ticket.setStatus(StatusTicket.PENDENTE); // sempre começa pendente
 
         return ticketRepository.save(ticket);
     }
