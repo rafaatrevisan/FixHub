@@ -1,5 +1,6 @@
 package com.helpbus.HelpBus.model.entity;
 
+import com.helpbus.HelpBus.model.enums.EquipeResponsavel;
 import com.helpbus.HelpBus.model.enums.PrioridadeTicket;
 import com.helpbus.HelpBus.model.enums.StatusTicket;
 import lombok.AllArgsConstructor;
@@ -36,6 +37,10 @@ public class Ticket {
     @Enumerated(EnumType.STRING)
     @Column(name = "prioridade", nullable = false, length = 20)
     private PrioridadeTicket prioridade;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "equipe_responsavel", nullable = false, length = 20)
+    private EquipeResponsavel equipeResponsavel;
 
     @Column(name = "andar", length = 255)
     private String andar;

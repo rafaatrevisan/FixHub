@@ -1,5 +1,6 @@
 package com.helpbus.HelpBus.model.dto;
 
+import com.helpbus.HelpBus.model.enums.EquipeResponsavel;
 import com.helpbus.HelpBus.model.enums.PrioridadeTicket;
 import com.helpbus.HelpBus.model.enums.StatusTicket;
 import lombok.AllArgsConstructor;
@@ -19,6 +20,7 @@ public class TicketDTO {
     private Integer idUsuario;
     private StatusTicket status;
     private PrioridadeTicket prioridade;
+    private EquipeResponsavel equipeResponsavel;
     private String andar;
     private String localizacao;
     private String descricaoLocalizacao;
