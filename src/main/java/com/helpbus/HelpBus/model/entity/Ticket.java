@@ -1,5 +1,6 @@
 package com.helpbus.HelpBus.model.entity;
 
+import com.helpbus.HelpBus.model.enums.EquipeResponsavel;
 import com.helpbus.HelpBus.model.enums.PrioridadeTicket;
 import com.helpbus.HelpBus.model.enums.StatusTicket;
 import lombok.AllArgsConstructor;
@@ -22,12 +23,12 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "data_ticket", nullable = false)
+    @Column(name = "data_ticket", nullable = false, updatable = false)
     private LocalDateTime dataTicket;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario", nullable = false)
-    private Pessoa usuario; // Pessoa que abriu o ticket
+    private Pessoa usuario;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -36,6 +37,10 @@ public class Ticket {
     @Enumerated(EnumType.STRING)
     @Column(name = "prioridade", nullable = false, length = 20)
     private PrioridadeTicket prioridade;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "equipe_responsavel", nullable = false, length = 20)
+    private EquipeResponsavel equipeResponsavel;
 
     @Column(name = "andar", length = 255)
     private String andar;
@@ -51,4 +56,9 @@ public class Ticket {
 
     @Column(name = "imagem", length = 255)
     private String imagem;
+
+    @PrePersist
+    protected void onCreate() {
+        this.dataTicket = LocalDateTime.now();
+    }
 }

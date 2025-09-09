@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# Arquivo com dados sensíveis (API Key)
+/src/main/resources/application.properties
