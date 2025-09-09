@@ -5,11 +5,11 @@ import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Ticket;
 
 public class TicketMapper {
-
     public static Ticket toEntity(TicketDTO dto, Pessoa usuario) {
         return Ticket.builder()
                 .id(dto.getId())
-                .dataTicket(dto.getDataTicket()) // será ignorado no POST
+                .dataTicket(dto.getDataTicket())
+                .dataAtualizacao(dto.getDataAtualizacao())
                 .usuario(usuario)
                 .status(dto.getStatus())
                 .prioridade(dto.getPrioridade())
@@ -21,11 +21,11 @@ public class TicketMapper {
                 .imagem(dto.getImagem())
                 .build();
     }
-
     public static TicketDTO toDTO(Ticket ticket) {
         return TicketDTO.builder()
                 .id(ticket.getId())
                 .dataTicket(ticket.getDataTicket())
+                .dataAtualizacao(ticket.getDataAtualizacao())
                 .idUsuario(ticket.getUsuario().getId())
                 .status(ticket.getStatus())
                 .prioridade(ticket.getPrioridade())

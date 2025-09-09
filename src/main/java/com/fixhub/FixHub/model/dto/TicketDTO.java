@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 public class TicketDTO {
     private Integer id;
     private LocalDateTime dataTicket;
+    private LocalDateTime dataAtualizacao;
     private Integer idUsuario;
     private StatusTicket status;
     private PrioridadeTicket prioridade;

@@ -14,7 +14,7 @@
 	<artifactId>FixHub</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>FixHub</name>
-	<description>API para tickets de manutenção no Terminal Rodoviário de Campinas</description>
+	<description>Projeto de PI que visa criar uma aplicação que auxilia nos processos de manutenção da Rodoviária de Campinas</description>
 
 	<properties>
 		<java.version>11</java.version>

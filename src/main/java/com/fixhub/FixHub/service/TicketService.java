@@ -51,13 +51,21 @@ public class TicketService {
                             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
 
                     ticketExistente.setUsuario(usuario);
-                    ticketExistente.setDataTicket(ticketAtualizado.getDataTicket());
-                    ticketExistente.setPrioridade(ticketAtualizado.getPrioridade());
                     ticketExistente.setAndar(ticketAtualizado.getAndar());
                     ticketExistente.setLocalizacao(ticketAtualizado.getLocalizacao());
                     ticketExistente.setDescricaoLocalizacao(ticketAtualizado.getDescricaoLocalizacao());
                     ticketExistente.setDescricaoTicketUsuario(ticketAtualizado.getDescricaoTicketUsuario());
                     ticketExistente.setImagem(ticketAtualizado.getImagem());
+
+                    GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
+                            ticketExistente.getDescricaoTicketUsuario(),
+                            ticketExistente.getLocalizacao(),
+                            ticketExistente.getDescricaoLocalizacao(),
+                            ticketExistente.getAndar()
+                    );
+
+                    ticketExistente.setPrioridade(resultadoIA.prioridade());
+                    ticketExistente.setEquipeResponsavel(resultadoIA.equipeResponsavel());
 
                     return ticketRepository.save(ticketExistente);
                 })
@@ -74,7 +82,12 @@ public class TicketService {
     }
 
     public void deleteTicket(Integer id) {
-        Ticket ticket = getTicketById(id);
-        ticketRepository.delete(ticket);
+        Ticket ticket = ticketRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
+
+        if (ticket.getStatus() != StatusTicket.PENDENTE) {
+            throw new IllegalStateException("Somente tickets pendentes podem ser excluídos");
+        }
+        ticketRepository.save(ticket);
     }
 }

@@ -23,8 +23,11 @@ public class Ticket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "data_ticket", nullable = false, updatable = false)
+    @Column(name = "data_criacao_ticket", nullable = false, updatable = false)
     private LocalDateTime dataTicket;
+
+    @Column(name = "data_atualizacao_ticket")
+    private LocalDateTime dataAtualizacao;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_usuario", nullable = false)
@@ -60,5 +63,10 @@ public class Ticket {
     @PrePersist
     protected void onCreate() {
         this.dataTicket = LocalDateTime.now();
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        this.dataAtualizacao = LocalDateTime.now();
     }
 }
