@@ -18,13 +18,24 @@ public class TicketService {
 
     private final TicketRepository ticketRepository;
     private final PessoaRepository pessoaRepository;
+    private final GeminiService geminiService;
 
     public Ticket criarTicket(Ticket ticket, Integer idUsuario) {
         Pessoa usuario = pessoaRepository.findById(idUsuario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
 
         ticket.setUsuario(usuario);
-        ticket.setStatus(StatusTicket.PENDENTE); // sempre começa pendente
+        ticket.setStatus(StatusTicket.PENDENTE);
+
+        GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
+                ticket.getDescricaoTicketUsuario(),
+                ticket.getLocalizacao(),
+                ticket.getDescricaoLocalizacao(),
+                ticket.getAndar()
+        );
+
+        ticket.setPrioridade(resultadoIA.prioridade());
+        ticket.setEquipeResponsavel(resultadoIA.equipeResponsavel());
 
         return ticketRepository.save(ticket);
     }
