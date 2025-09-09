@@ -10,11 +10,11 @@
 		<relativePath/>
 	</parent>
 
-	<groupId>com.helpbus</groupId>
-	<artifactId>HelpBus</artifactId>
+	<groupId>com.fixhub</groupId>
+	<artifactId>FixHub</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>HelpBus</name>
-	<description>Demo project for Spring Boot</description>
+	<name>FixHub</name>
+	<description>API para tickets de manutenção no Terminal Rodoviário de Campinas</description>
 
 	<properties>
 		<java.version>11</java.version>
