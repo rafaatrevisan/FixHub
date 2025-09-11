@@ -1,19 +1,15 @@
 package com.fixhub.FixHub.model.mapper;
 
-import com.fixhub.FixHub.model.dto.TicketDTO;
+import com.fixhub.FixHub.model.dto.TicketRequestDTO;
+import com.fixhub.FixHub.model.dto.TicketResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Ticket;
 
 public class TicketMapper {
 
-    public static Ticket toEntity(TicketDTO dto, Pessoa usuario) {
+    public static Ticket toEntity(TicketRequestDTO dto, Pessoa usuario) {
         return Ticket.builder()
-                .id(dto.getId())
-                .dataTicket(dto.getDataTicket()) // será ignorado no POST
                 .usuario(usuario)
-                .status(dto.getStatus())
-                .prioridade(dto.getPrioridade())
-                .equipeResponsavel(dto.getEquipeResponsavel())
                 .andar(dto.getAndar())
                 .localizacao(dto.getLocalizacao())
                 .descricaoLocalizacao(dto.getDescricaoLocalizacao())
@@ -22,10 +18,11 @@ public class TicketMapper {
                 .build();
     }
 
-    public static TicketDTO toDTO(Ticket ticket) {
-        return TicketDTO.builder()
+    public static TicketResponseDTO toResponseDTO(Ticket ticket) {
+        return TicketResponseDTO.builder()
                 .id(ticket.getId())
                 .dataTicket(ticket.getDataTicket())
+                .dataAtualizacao(ticket.getDataAtualizacao())
                 .idUsuario(ticket.getUsuario().getId())
                 .status(ticket.getStatus())
                 .prioridade(ticket.getPrioridade())

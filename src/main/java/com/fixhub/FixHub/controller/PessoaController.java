@@ -1,6 +1,7 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.PessoaDTO;
+import com.fixhub.FixHub.model.dto.PessoaRequestDTO;
+import com.fixhub.FixHub.model.dto.PessoaResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.mapper.PessoaMapper;
 import com.fixhub.FixHub.service.PessoaService;
@@ -21,31 +22,31 @@ public class PessoaController {
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<PessoaDTO> listarTodos() {
+    public List<PessoaResponseDTO> listarTodos() {
         return pessoaService.listarTodos()
                 .stream()
-                .map(PessoaMapper::toDTO)
+                .map(PessoaMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @GetMapping("{id}")
-    public PessoaDTO buscarPorId(@PathVariable Integer id) {
-        return PessoaMapper.toDTO(pessoaService.buscarPorId(id));
+    public PessoaResponseDTO buscarPorId(@PathVariable Integer id) {
+        return PessoaMapper.toResponseDTO(pessoaService.buscarPorId(id));
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<PessoaDTO> criar(@RequestBody PessoaDTO dto) {
+    public ResponseEntity<PessoaResponseDTO> criar(@RequestBody PessoaRequestDTO dto) {
         Pessoa pessoa = PessoaMapper.toEntity(dto);
         Pessoa salva = pessoaService.criarPessoa(pessoa);
-        return ResponseEntity.ok(PessoaMapper.toDTO(salva));
+        return ResponseEntity.ok(PessoaMapper.toResponseDTO(salva));
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<PessoaDTO> atualizar(@PathVariable Integer id, @RequestBody PessoaDTO dto) {
+    public ResponseEntity<PessoaResponseDTO> atualizar(@PathVariable Integer id, @RequestBody PessoaRequestDTO dto) {
         Pessoa pessoaAtualizada = PessoaMapper.toEntity(dto);
         Pessoa atualizada = pessoaService.atualizarPessoa(id, pessoaAtualizada);
-        return ResponseEntity.ok(PessoaMapper.toDTO(atualizada));
+        return ResponseEntity.ok(PessoaMapper.toResponseDTO(atualizada));
     }
 
     @DeleteMapping("{id}")

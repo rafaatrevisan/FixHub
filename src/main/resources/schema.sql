@@ -9,7 +9,8 @@ CREATE TABLE pessoa (
 
 CREATE TABLE ticket (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  data_ticket TIMESTAMP NOT NULL,
+  data_criacao_ticket TIMESTAMP NOT NULL,
+  data_atualizacao_ticket TIMESTAMP,
   id_usuario INT NOT NULL,
   status VARCHAR(20) NOT NULL,
   prioridade VARCHAR(20) NOT NULL,
