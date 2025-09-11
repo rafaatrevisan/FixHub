@@ -14,7 +14,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TicketDTO {
+public class TicketResponseDTO {
     private Integer id;
     private LocalDateTime dataTicket;
     private LocalDateTime dataAtualizacao;

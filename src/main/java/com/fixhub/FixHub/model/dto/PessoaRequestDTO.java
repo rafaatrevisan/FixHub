@@ -7,17 +7,14 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PessoaDTO {
-    private Integer id;
+public class PessoaRequestDTO {
     private String nome;
     private LocalDate dataNascimento;
     private String telefone;
     private Cargo cargo;
-    private LocalDateTime dataCadastro;
 }

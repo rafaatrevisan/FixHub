@@ -1,6 +1,6 @@
 package com.fixhub.FixHub.service;
 
-import com.fixhub.FixHub.model.dto.ResolucaoTicketDTO;
+import com.fixhub.FixHub.model.dto.ResolucaoTicketRequestDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.ResolucaoTicket;
 import com.fixhub.FixHub.model.entity.Ticket;
@@ -13,8 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDateTime;
-
 @Service
 @RequiredArgsConstructor
 public class ResolucaoTicketService {
@@ -23,7 +21,7 @@ public class ResolucaoTicketService {
     private final PessoaRepository pessoaRepository;
     private final ResolucaoTicketRepository resolucaoTicketRepository;
 
-    public ResolucaoTicket resolverTicket(ResolucaoTicketDTO dto) {
+    public ResolucaoTicket resolverTicket(ResolucaoTicketRequestDTO dto) {
         Ticket ticket = ticketRepository.findById(dto.getIdTicket())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
 

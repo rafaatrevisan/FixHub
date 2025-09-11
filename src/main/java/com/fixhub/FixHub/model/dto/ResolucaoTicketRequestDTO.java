@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class ResolucaoTicketDTO {
+public class ResolucaoTicketRequestDTO {
     private Integer idTicket;
     private Integer idFuncionario;
     private String descricao;

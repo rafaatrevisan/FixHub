@@ -1,6 +1,6 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.ResolucaoTicketDTO;
+import com.fixhub.FixHub.model.dto.ResolucaoTicketRequestDTO;
 import com.fixhub.FixHub.model.dto.ResolucaoTicketResponseDTO;
 import com.fixhub.FixHub.model.entity.ResolucaoTicket;
 import com.fixhub.FixHub.model.mapper.ResolucaoTicketMapper;
@@ -17,7 +17,7 @@ public class ResolucaoTicketController {
     private final ResolucaoTicketService resolucaoService;
 
     @PostMapping("/resolver")
-    public ResponseEntity<ResolucaoTicketResponseDTO> resolverTicket(@RequestBody ResolucaoTicketDTO dto) {
+    public ResponseEntity<ResolucaoTicketResponseDTO> resolverTicket(@RequestBody ResolucaoTicketRequestDTO dto) {
         ResolucaoTicket resolucao = resolucaoService.resolverTicket(dto);
         return ResponseEntity.ok(ResolucaoTicketMapper.toDTO(resolucao));
     }

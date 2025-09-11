@@ -1,8 +1,11 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.TicketDTO;
+import com.fixhub.FixHub.model.dto.TicketRequestDTO;
+import com.fixhub.FixHub.model.dto.TicketResponseDTO;
+import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Ticket;
 import com.fixhub.FixHub.model.mapper.TicketMapper;
+import com.fixhub.FixHub.service.PessoaService;
 import com.fixhub.FixHub.service.TicketService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,30 +22,33 @@ import java.util.stream.Collectors;
 public class TicketController {
 
     private final TicketService ticketService;
+    private final PessoaService pessoaService;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
-    public List<TicketDTO> listarTodos() {
+    public List<TicketResponseDTO> listarTodos() {
         return ticketService.getAllTickets()
                 .stream()
-                .map(TicketMapper::toDTO)
+                .map(TicketMapper::toResponseDTO)
                 .collect(Collectors.toList());
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<TicketDTO> criar(@RequestBody TicketDTO dto) {
-        Ticket ticket = TicketMapper.toEntity(dto, null);
+    public ResponseEntity<TicketResponseDTO> criar(@RequestBody TicketRequestDTO dto) {
+        Pessoa usuario = pessoaService.buscarPorId(dto.getIdUsuario());
+        Ticket ticket = TicketMapper.toEntity(dto, usuario);
         Ticket salvo = ticketService.criarTicket(ticket, dto.getIdUsuario());
-        return ResponseEntity.ok(TicketMapper.toDTO(salvo));
+        return ResponseEntity.ok(TicketMapper.toResponseDTO(salvo));
     }
 
     @PutMapping("{id}")
-    public ResponseEntity<?> atualizar(@PathVariable Integer id, @RequestBody TicketDTO dto) {
+    public ResponseEntity<?> atualizar(@PathVariable Integer id, @RequestBody TicketRequestDTO dto) {
         try {
-            Ticket ticket = TicketMapper.toEntity(dto, null);
-            ticketService.atualizarTicket(id, ticket, dto.getIdUsuario());
-            return ResponseEntity.noContent().build();
+            Pessoa usuario = pessoaService.buscarPorId(dto.getIdUsuario());
+            Ticket ticket = TicketMapper.toEntity(dto, usuario);
+            Ticket atualizado = ticketService.atualizarTicket(id, ticket, dto.getIdUsuario());
+            return ResponseEntity.ok(TicketMapper.toResponseDTO(atualizado));
         } catch (IllegalStateException e) {
             return ResponseEntity
                     .status(HttpStatus.BAD_REQUEST)
@@ -51,8 +57,8 @@ public class TicketController {
     }
 
     @GetMapping("{id}")
-    public TicketDTO buscarPorId(@PathVariable Integer id) {
-        return TicketMapper.toDTO(ticketService.getTicketById(id));
+    public TicketResponseDTO buscarPorId(@PathVariable Integer id) {
+        return TicketMapper.toResponseDTO(ticketService.getTicketById(id));
     }
 
     @DeleteMapping("{id}")

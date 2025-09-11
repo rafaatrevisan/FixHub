@@ -1,23 +1,22 @@
 package com.fixhub.FixHub.model.mapper;
 
-import com.fixhub.FixHub.model.dto.PessoaDTO;
+import com.fixhub.FixHub.model.dto.PessoaRequestDTO;
+import com.fixhub.FixHub.model.dto.PessoaResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 
 public class PessoaMapper {
 
-    public static Pessoa toEntity(PessoaDTO dto) {
+    public static Pessoa toEntity(PessoaRequestDTO dto) {
         return Pessoa.builder()
-                .id(dto.getId())
                 .nome(dto.getNome())
                 .dataNascimento(dto.getDataNascimento())
                 .telefone(dto.getTelefone())
                 .cargo(dto.getCargo())
-                .dataCadastro(dto.getDataCadastro())
                 .build();
     }
 
-    public static PessoaDTO toDTO(Pessoa pessoa) {
-        return PessoaDTO.builder()
+    public static PessoaResponseDTO toResponseDTO(Pessoa pessoa) {
+        return PessoaResponseDTO.builder()
                 .id(pessoa.getId())
                 .nome(pessoa.getNome())
                 .dataNascimento(pessoa.getDataNascimento())
