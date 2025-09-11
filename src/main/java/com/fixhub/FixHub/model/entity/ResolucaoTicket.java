@@ -32,5 +32,10 @@ public class ResolucaoTicket {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_funcionario", nullable = false)
-    private Pessoa funcionario; // Pessoa que resolveu o ticket
+    private Pessoa funcionario;
+
+    @PrePersist
+    protected void onCreate() {
+        this.dataResolucao = LocalDateTime.now();
+    }
 }
