@@ -35,11 +35,15 @@ public class Pessoa {
     @Column(name = "cargo", nullable = false, length = 50)
     private Cargo cargo;
 
+    @Column(nullable = false)
+    private Boolean ativo;
+
     @Column(name = "data_cadastro", nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
 
     @PrePersist
     protected void onCreate() {
         this.dataCadastro = LocalDateTime.now();
+        this.ativo = true;
     }
 }

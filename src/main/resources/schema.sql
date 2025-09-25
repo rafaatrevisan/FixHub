@@ -4,6 +4,7 @@ CREATE TABLE pessoa (
   data_nascimento DATE NOT NULL,
   telefone VARCHAR(11) NOT NULL,
   cargo VARCHAR(50) NOT NULL,
+  ativo BOOLEAN NOT NULL,
   data_cadastro TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -26,8 +27,8 @@ CREATE TABLE ticket (
 CREATE TABLE resolucao_ticket (
   id INT AUTO_INCREMENT PRIMARY KEY,
   id_ticket INT NOT NULL,
-  descricao VARCHAR(255) NOT NULL,
-  data_resolucao TIMESTAMP NOT NULL,
+  descricao VARCHAR(255),
+  data_resolucao TIMESTAMP,
   id_funcionario INT NOT NULL,
   CONSTRAINT fk_resolucao_ticket_ticket FOREIGN KEY (id_ticket) REFERENCES ticket(id),
   CONSTRAINT fk_resolucao_ticket_funcionario FOREIGN KEY (id_funcionario) REFERENCES pessoa(id)
@@ -38,5 +39,6 @@ CREATE TABLE usuario (
   id_pessoa INT NOT NULL,
   email VARCHAR(255) UNIQUE NOT NULL,
   senha VARCHAR(255) NOT NULL,
+  ativo BOOLEAN NOT NULL,
   CONSTRAINT fk_usuario_pessoa FOREIGN KEY (id_pessoa) REFERENCES pessoa(id)
 );

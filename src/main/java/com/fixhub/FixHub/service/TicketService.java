@@ -1,9 +1,12 @@
 package com.fixhub.FixHub.service;
 
+import com.fixhub.FixHub.model.dto.TicketDetalhesDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
+import com.fixhub.FixHub.model.entity.ResolucaoTicket;
 import com.fixhub.FixHub.model.entity.Ticket;
 import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.model.repository.PessoaRepository;
+import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
 import com.fixhub.FixHub.model.repository.TicketRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,12 +14,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class TicketService {
 
     private final TicketRepository ticketRepository;
+    private final ResolucaoTicketRepository resolucaoTicketRepository;
     private final PessoaRepository pessoaRepository;
     private final GeminiService geminiService;
 
@@ -81,6 +86,7 @@ public class TicketService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
     }
 
+    // Método para que um usuário possa excluir um ticket que ele abriu sem querer ou que tenha informações erradas (apenas se ainda estiver pendente)
     public void deleteTicket(Integer id) {
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
@@ -90,4 +96,43 @@ public class TicketService {
         }
         ticketRepository.save(ticket);
     }
+
+    public TicketDetalhesDTO buscarTicketComResolucao(Integer idTicket) {
+        Ticket ticket = ticketRepository.findById(idTicket)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
+
+        if (ticket.getStatus() == StatusTicket.PENDENTE) {
+            throw new IllegalStateException("Ticket pendente não possui resolução.");
+        }
+
+        Optional<ResolucaoTicket> resolucaoOpt = resolucaoTicketRepository.findByTicketId(ticket.getId());
+
+        TicketDetalhesDTO dto = TicketDetalhesDTO.builder()
+                .idTicket(ticket.getId())
+                .idUsuario(ticket.getUsuario().getId())
+                .nomeUsuario(ticket.getUsuario().getNome())
+                .dataTicket(ticket.getDataTicket())
+                .dataAtualizacao(ticket.getDataAtualizacao())
+                .status(ticket.getStatus())
+                .prioridade(ticket.getPrioridade())
+                .equipeResponsavel(ticket.getEquipeResponsavel())
+                .andar(ticket.getAndar())
+                .localizacao(ticket.getLocalizacao())
+                .descricaoLocalizacao(ticket.getDescricaoLocalizacao())
+                .descricaoTicketUsuario(ticket.getDescricaoTicketUsuario())
+                .imagem(ticket.getImagem())
+                .build();
+
+        if (resolucaoOpt.isPresent()) {
+            ResolucaoTicket resolucao = resolucaoOpt.get();
+            dto.setIdResolucao(resolucao.getId());
+            dto.setIdFuncionario(resolucao.getFuncionario().getId());
+            dto.setNomeFuncionario(resolucao.getFuncionario().getNome());
+            dto.setDescricaoResolucao(resolucao.getDescricao());
+            dto.setDataResolucao(resolucao.getDataResolucao());
+        }
+
+        return dto;
+    }
+
 }
