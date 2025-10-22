@@ -40,11 +40,9 @@ public class TicketService {
         List<TicketMestre> ticketsMestreRecentes = ticketMestreRepository
                 .findTicketsMestreUltimas24h(inicio, StatusTicket.CONCLUIDO, StatusTicket.REPROVADO);
 
-        // Comparar ticket com tickets mestre existentes
         Object resultadoComparacao = geminiService.compararComListaTicketsMestre(ticket, ticketsMestreRecentes);
 
         if (resultadoComparacao instanceof Integer idMestre) {
-            // Encontrou ticket mestre existente
             TicketMestre mestre = ticketMestreRepository.findById(idMestre)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
@@ -55,7 +53,6 @@ public class TicketService {
             ticket.setStatus(mestre.getStatus());
 
         } else {
-            // Não encontrou, criar novo ticket mestre com base na IA
             GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
                     ticket.getDescricaoTicketUsuario(),
                     ticket.getLocalizacao(),
@@ -89,6 +86,14 @@ public class TicketService {
                 .map(ticketExistente -> {
                     if (ticketExistente.getStatus() != StatusTicket.PENDENTE) {
                         throw new IllegalStateException("O ticket deve estar pendente para ser atualizado");
+                    }
+
+                    boolean mesmoProblema = geminiService.mesmoProblema(ticketExistente, ticketAtualizado);
+                    if (!mesmoProblema) {
+                        throw new IllegalStateException(
+                                "Erro ao atualizar ticket! Para reportar um problema diferente, " +
+                                        "você deve excluir este ticket já existente e abrir outro."
+                        );
                     }
 
                     Pessoa usuario = pessoaRepository.findById(idUsuario)
@@ -133,8 +138,20 @@ public class TicketService {
         if (ticket.getStatus() != StatusTicket.PENDENTE) {
             throw new IllegalStateException("Somente tickets pendentes podem ser excluídos");
         }
-        ticketRepository.save(ticket);
+
+        TicketMestre mestre = ticket.getTicketMestre();
+        if (mestre != null) {
+            List<Ticket> ticketsVinculados = ticketRepository.findByTicketMestreId(mestre.getId());
+
+            if (ticketsVinculados.size() == 1) {
+                ticketRepository.delete(ticket);
+                ticketMestreRepository.delete(mestre);
+                return;
+            }
+        }
+        ticketRepository.delete(ticket);
     }
+
 
     public TicketDetalhesDTO buscarTicketComResolucao(Integer idTicket, Integer idUsuario) {
         Ticket ticket = ticketRepository.findById(idTicket)

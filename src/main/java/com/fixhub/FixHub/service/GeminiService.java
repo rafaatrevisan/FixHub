@@ -171,15 +171,77 @@ public class GeminiService {
                 throw new RuntimeException("Erro ao chamar API do Gemini para similaridade", e);
             }
         }
-
         // Se encontrou algum ticket mestre acima do threshold, retorna o ID
         if (idMaisSimilar != -1) {
             return idMaisSimilar;
         }
-
-        // Caso contrário, retorna "false"
         return "false";
     }
+
+    /**
+     * Verifica se o problema do ticket a ser atualizado ainda é o mesmo, retornando true ou false
+     */
+    public boolean mesmoProblema(Ticket ticketOriginal, Ticket ticketAtualizado) {
+        try {
+            String prompt = """
+            Você é um assistente que gerencia tickets de manutenção no Terminal Rodoviário de Campinas.
+            Compare os dois tickets abaixo e responda SOMENTE com "true" se eles se referem ao mesmo problema
+            ou "false" se forem problemas diferentes.
+
+            Ticket Original:
+            - Andar: %s
+            - Localização: %s
+            - Detalhes da localização: %s
+            - Descrição: %s
+
+            Ticket Atualizado:
+            - Andar: %s
+            - Localização: %s
+            - Detalhes da localização: %s
+            - Descrição: %s
+            """.formatted(
+                    ticketOriginal.getAndar(),
+                    ticketOriginal.getLocalizacao(),
+                    ticketOriginal.getDescricaoLocalizacao(),
+                    ticketOriginal.getDescricaoTicketUsuario(),
+                    ticketAtualizado.getAndar(),
+                    ticketAtualizado.getLocalizacao(),
+                    ticketAtualizado.getDescricaoLocalizacao(),
+                    ticketAtualizado.getDescricaoTicketUsuario()
+            );
+
+            String requestBody = """
+            {
+              "contents": [{
+                "parts":[{"text": "%s"}]
+              }]
+            }
+            """.formatted(prompt.replace("\"", "\\\""));
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GEMINI_URL))
+                    .header("Content-Type", "application/json")
+                    .header("X-goog-api-key", apiKey)
+                    .POST(HttpRequest.BodyPublishers.ofString(requestBody))
+                    .build();
+
+            HttpClient client = HttpClient.newHttpClient();
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(response.body());
+
+            String rawText = root.path("candidates").get(0)
+                    .path("content").path("parts").get(0)
+                    .path("text").asText().trim().toLowerCase();
+
+            return rawText.contains("true");
+
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Erro ao chamar API do Gemini para comparação de tickets", e);
+        }
+    }
+
 
     public record GeminiResult(PrioridadeTicket prioridade, EquipeResponsavel equipeResponsavel) {}
 }
