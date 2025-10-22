@@ -35,11 +35,24 @@ public class Pessoa {
     @Column(name = "cargo", nullable = false, length = 50)
     private Cargo cargo;
 
+    @Column(name = "data_cadastro", nullable = false, updatable = false)
+    private LocalDateTime dataCadastro;
+
     @Column(nullable = false)
     private Boolean ativo;
 
-    @Column(name = "data_cadastro", nullable = false, updatable = false)
-    private LocalDateTime dataCadastro;
+    public boolean isAtivo() {
+        return ativo;
+    }
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    @Column(name = "data_alteracao")
+    private LocalDateTime dataAlteracao;
+
+    @Column(name = "usuario_alterador")
+    private Integer usuarioAlterador;
 
     @PrePersist
     protected void onCreate() {

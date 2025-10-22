@@ -63,8 +63,10 @@ public class TicketController {
     }
 
     @GetMapping("{id}/detalhes")
-    public TicketDetalhesDTO buscarDetalhes(@PathVariable Integer id) {
-        return ticketService.buscarTicketComResolucao(id);
+    public TicketDetalhesDTO buscarDetalhes(
+            @PathVariable Integer id,
+            @RequestParam Integer idUsuario) {
+        return ticketService.buscarTicketComResolucao(id, idUsuario);
     }
 
     @DeleteMapping("{id}")

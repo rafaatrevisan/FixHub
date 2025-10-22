@@ -4,7 +4,7 @@ public enum Cargo {
     CLIENTE(1),
     LIMPEZA(2),
     MANUTENCAO(3),
-    ADMINISTRACAO(4),
+    SUPORTE(4),
     GERENTE(5);
 
     private final int id;

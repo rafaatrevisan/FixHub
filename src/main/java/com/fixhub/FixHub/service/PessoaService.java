@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -21,12 +22,18 @@ public class PessoaService {
     private final PessoaRepository pessoaRepository;
 
     public List<Pessoa> listarTodos() {
-        return pessoaRepository.findAll();
+        return pessoaRepository.findByAtivoTrue();
     }
 
     public Pessoa buscarPorId(Integer id) {
-        return pessoaRepository.findById(id)
+        Pessoa pessoa = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
+
+        if (!pessoa.isAtivo()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa inativa");
+        }
+
+        return pessoa;
     }
 
     public Pessoa criarPessoa(Pessoa pessoa) {
@@ -35,23 +42,66 @@ public class PessoaService {
         return pessoaRepository.save(pessoa);
     }
 
-    public Pessoa atualizarPessoa(Integer id, Pessoa pessoaAtualizada) {
+    public Pessoa atualizarPessoa(Integer id, Pessoa pessoaAtualizada, Integer idUsuarioAlterador) {
+        Pessoa usuarioAlterador = pessoaRepository.findById(idUsuarioAlterador)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário alterador não encontrado"));
+
+        boolean ehGerenteOuSuporte = usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE;
+        boolean ehProprioUsuario = usuarioAlterador.getId().equals(id);
+        if (!(ehGerenteOuSuporte || ehProprioUsuario)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário sem permissão para alteração.");
+        }
         return pessoaRepository.findById(id)
                 .map(pessoa -> {
+                    if (!pessoa.isAtivo()) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível atualizar uma pessoa inativa");
+                    }
                     if (pessoaAtualizada.getNome() != null) pessoa.setNome(pessoaAtualizada.getNome());
                     if (pessoaAtualizada.getDataNascimento() != null) pessoa.setDataNascimento(pessoaAtualizada.getDataNascimento());
                     if (pessoaAtualizada.getTelefone() != null) pessoa.setTelefone(pessoaAtualizada.getTelefone());
                     if (pessoaAtualizada.getCargo() != null) pessoa.setCargo(pessoaAtualizada.getCargo());
-
                     validarPessoa(pessoa);
+
+                    pessoa.setDataAlteracao(LocalDateTime.now());
+                    pessoa.setUsuarioAlterador(idUsuarioAlterador);
                     return pessoaRepository.save(pessoa);
                 })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
     }
 
-    public void deletarPessoa(Integer id) {
+    public void desativarPessoa(Integer id, Integer idUsuarioAlterador) {
+        Pessoa usuarioAlterador = pessoaRepository.findById(idUsuarioAlterador)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário alterador não encontrado"));
+
+        boolean ehGerenteOuSuporte = usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE;
+        boolean ehProprioUsuario = usuarioAlterador.getId().equals(id);
+
+        if (!(ehGerenteOuSuporte || ehProprioUsuario)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário sem permissão para desativação.");
+        }
+
         Pessoa pessoa = buscarPorId(id);
-        pessoaRepository.delete(pessoa);
+        pessoa.setAtivo(false);
+        pessoa.setDataAlteracao(LocalDateTime.now());
+        pessoa.setUsuarioAlterador(idUsuarioAlterador);
+        pessoaRepository.save(pessoa);
+    }
+
+    public void reativarPessoa(Integer id, Integer idUsuarioAlterador) {
+        Pessoa usuarioAlterador = pessoaRepository.findById(idUsuarioAlterador)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário alterador não encontrado"));
+
+        if (!(usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário sem permissão para reativação.");
+        }
+
+        Pessoa pessoa = pessoaRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
+
+        pessoa.setAtivo(true);
+        pessoa.setDataAlteracao(LocalDateTime.now());
+        pessoa.setUsuarioAlterador(idUsuarioAlterador);
+        pessoaRepository.save(pessoa);
     }
 
     public void validarPessoa(Pessoa pessoa) {
