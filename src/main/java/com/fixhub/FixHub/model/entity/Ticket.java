@@ -64,6 +64,10 @@ public class Ticket {
     @JoinColumn(name = "id_ticket_mestre")
     private TicketMestre ticketMestre;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_lixeira")
+    private Lixeira lixeira;
+
     @PrePersist
     protected void onCreate() {
         this.dataTicket = LocalDateTime.now();

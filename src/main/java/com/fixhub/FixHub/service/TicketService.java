@@ -1,16 +1,16 @@
 package com.fixhub.FixHub.service;
 
 import com.fixhub.FixHub.model.dto.TicketDetalhesDTO;
-import com.fixhub.FixHub.model.entity.Pessoa;
-import com.fixhub.FixHub.model.entity.ResolucaoTicket;
-import com.fixhub.FixHub.model.entity.Ticket;
-import com.fixhub.FixHub.model.entity.TicketMestre;
+import com.fixhub.FixHub.model.entity.*;
+import com.fixhub.FixHub.model.enums.PrioridadeTicket;
 import com.fixhub.FixHub.model.enums.StatusTicket;
+import com.fixhub.FixHub.model.repository.LixeiraRepository;
 import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
 import com.fixhub.FixHub.model.repository.TicketMestreRepository;
 import com.fixhub.FixHub.model.repository.TicketRepository;
 import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -26,6 +26,7 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final TicketMestreRepository ticketMestreRepository;
     private final ResolucaoTicketRepository resolucaoTicketRepository;
+    private final LixeiraRepository lixeiraRepository;
     private final GeminiService geminiService;
     private final AuthUtil authUtil;
 
@@ -123,15 +124,6 @@ public class TicketService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
     }
 
-    public List<Ticket> getAllTickets() {
-        return ticketRepository.findAll();
-    }
-
-    public Ticket getTicketById(Integer id) {
-        return ticketRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
-    }
-
     // Método para que um usuário possa excluir um ticket que ele abriu sem querer ou que tenha informações erradas (apenas se ainda estiver pendente)
     public void deleteTicket(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
@@ -160,7 +152,7 @@ public class TicketService {
         ticketRepository.delete(ticket);
     }
 
-    public TicketDetalhesDTO buscarTicketComResolucao(Integer idTicket) {
+    public TicketDetalhesDTO buscarTicketComDetalhes(Integer idTicket) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
         Ticket ticket = ticketRepository.findById(idTicket)
@@ -168,10 +160,6 @@ public class TicketService {
 
         if (!ticket.getUsuario().getId().equals(usuarioLogado.getId())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Este ticket não pertence a você.");
-        }
-
-        if (ticket.getStatus() == StatusTicket.PENDENTE) {
-            throw new IllegalStateException("Ticket pendente não possui resolução.");
         }
 
         TicketMestre ticketMestre = ticket.getTicketMestre();
@@ -208,4 +196,95 @@ public class TicketService {
 
         return dto;
     }
+
+    public void criarTicketPorLixeira(Integer idLixeira) {
+        Lixeira lixeira = lixeiraRepository.findById(idLixeira)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lixeira não encontrada"));
+
+        Ticket ticket = new Ticket();
+        ticket.setAndar(lixeira.getAndar());
+        ticket.setLocalizacao(lixeira.getLocalizacao());
+        ticket.setDescricaoLocalizacao(lixeira.getDescricaoLocalizacao());
+        ticket.setDescricaoTicketUsuario(lixeira.getDescricaoTicketUsuario());
+        ticket.setLixeira(lixeira);
+        ticket.setStatus(StatusTicket.PENDENTE);
+
+        GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
+                ticket.getDescricaoTicketUsuario(),
+                ticket.getLocalizacao(),
+                ticket.getDescricaoLocalizacao(),
+                ticket.getAndar()
+        );
+
+        ticket.setPrioridade(resultadoIA.prioridade());
+        ticket.setEquipeResponsavel(resultadoIA.equipeResponsavel());
+
+        LocalDateTime inicio = LocalDateTime.now().minusHours(24);
+        List<TicketMestre> ticketsMestreRecentes = ticketMestreRepository.findTicketsMestreUltimas24h(inicio, StatusTicket.CONCLUIDO, StatusTicket.REPROVADO);
+
+        Object resultadoComparacao = geminiService.compararComListaTicketsMestre(ticket, ticketsMestreRecentes);
+
+        if (resultadoComparacao instanceof Integer idMestre) {
+            TicketMestre mestre = ticketMestreRepository.findById(idMestre)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
+            ticket.setTicketMestre(mestre);
+            ticket.setPrioridade(mestre.getPrioridade());
+            ticket.setEquipeResponsavel(mestre.getEquipeResponsavel());
+            ticket.setStatus(mestre.getStatus());
+        } else {
+            TicketMestre novoMestre = TicketMestre.builder()
+                    .status(StatusTicket.PENDENTE)
+                    .prioridade(resultadoIA.prioridade())
+                    .equipeResponsavel(resultadoIA.equipeResponsavel())
+                    .andar(ticket.getAndar())
+                    .localizacao(ticket.getLocalizacao())
+                    .descricaoLocalizacao(ticket.getDescricaoLocalizacao())
+                    .descricaoTicketUsuario(ticket.getDescricaoTicketUsuario())
+                    .build();
+            ticketMestreRepository.save(novoMestre);
+            ticket.setTicketMestre(novoMestre);
+        }
+
+        ticketRepository.save(ticket);
+    }
+
+    public List<Ticket> listarMeusTicketsComFiltros(
+            LocalDateTime dataInicio,
+            LocalDateTime dataFim,
+            StatusTicket status,
+            PrioridadeTicket prioridade,
+            String andar
+    ) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
+        Specification<Ticket> spec = Specification.where(
+                (root, query, cb) -> cb.equal(root.get("usuario").get("id"), usuarioLogado.getId())
+        );
+
+        if (dataInicio != null && dataFim != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.between(root.get("dataTicket"), dataInicio, dataFim));
+        } else if (dataInicio != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("dataTicket"), dataInicio));
+        } else if (dataFim != null) {
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("dataTicket"), dataFim));
+        }
+
+        if (status != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
+        }
+
+        if (prioridade != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("prioridade"), prioridade));
+        }
+
+        if (andar != null && !andar.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("andar"), andar));
+        }
+
+        return ticketRepository.findAll(spec);
+    }
+
 }
