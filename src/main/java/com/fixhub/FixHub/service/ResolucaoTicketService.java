@@ -5,6 +5,7 @@ import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.ResolucaoTicket;
 import com.fixhub.FixHub.model.entity.Ticket;
 import com.fixhub.FixHub.model.entity.TicketMestre;
+import com.fixhub.FixHub.model.enums.Cargo;
 import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
@@ -40,6 +41,10 @@ public class ResolucaoTicketService {
 
         Pessoa funcionario = pessoaRepository.findById(idFuncionario)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+
+        if (funcionario.getCargo() == Cargo.CLIENTE) {
+            throw new IllegalStateException("Usuário não tem permissão para assumir tickets.");
+        }
 
         mestre.setStatus(StatusTicket.EM_ANDAMENTO);
         mestre.setDataAtualizacao(LocalDateTime.now());
