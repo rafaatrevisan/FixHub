@@ -1,11 +1,9 @@
 package com.fixhub.FixHub.service;
 
 import com.fixhub.FixHub.model.dto.TicketDetalhesDTO;
-import com.fixhub.FixHub.model.entity.Pessoa;
-import com.fixhub.FixHub.model.entity.ResolucaoTicket;
-import com.fixhub.FixHub.model.entity.Ticket;
-import com.fixhub.FixHub.model.entity.TicketMestre;
+import com.fixhub.FixHub.model.entity.*;
 import com.fixhub.FixHub.model.enums.StatusTicket;
+import com.fixhub.FixHub.model.repository.LixeiraRepository;
 import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
 import com.fixhub.FixHub.model.repository.TicketMestreRepository;
 import com.fixhub.FixHub.model.repository.TicketRepository;
@@ -26,6 +24,7 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final TicketMestreRepository ticketMestreRepository;
     private final ResolucaoTicketRepository resolucaoTicketRepository;
+    private final LixeiraRepository lixeiraRepository;
     private final GeminiService geminiService;
     private final AuthUtil authUtil;
 
@@ -208,4 +207,56 @@ public class TicketService {
 
         return dto;
     }
+
+    public void criarTicketPorLixeira(Integer idLixeira) {
+        Lixeira lixeira = lixeiraRepository.findById(idLixeira)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lixeira não encontrada"));
+
+        Ticket ticket = new Ticket();
+        ticket.setAndar(lixeira.getAndar());
+        ticket.setLocalizacao(lixeira.getLocalizacao());
+        ticket.setDescricaoLocalizacao(lixeira.getDescricaoLocalizacao());
+        ticket.setDescricaoTicketUsuario(lixeira.getDescricaoTicketUsuario());
+        ticket.setLixeira(lixeira);
+        ticket.setStatus(StatusTicket.PENDENTE);
+
+        GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
+                ticket.getDescricaoTicketUsuario(),
+                ticket.getLocalizacao(),
+                ticket.getDescricaoLocalizacao(),
+                ticket.getAndar()
+        );
+
+        ticket.setPrioridade(resultadoIA.prioridade());
+        ticket.setEquipeResponsavel(resultadoIA.equipeResponsavel());
+
+        LocalDateTime inicio = LocalDateTime.now().minusHours(24);
+        List<TicketMestre> ticketsMestreRecentes = ticketMestreRepository.findTicketsMestreUltimas24h(inicio, StatusTicket.CONCLUIDO, StatusTicket.REPROVADO);
+
+        Object resultadoComparacao = geminiService.compararComListaTicketsMestre(ticket, ticketsMestreRecentes);
+
+        if (resultadoComparacao instanceof Integer idMestre) {
+            TicketMestre mestre = ticketMestreRepository.findById(idMestre)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
+            ticket.setTicketMestre(mestre);
+            ticket.setPrioridade(mestre.getPrioridade());
+            ticket.setEquipeResponsavel(mestre.getEquipeResponsavel());
+            ticket.setStatus(mestre.getStatus());
+        } else {
+            TicketMestre novoMestre = TicketMestre.builder()
+                    .status(StatusTicket.PENDENTE)
+                    .prioridade(resultadoIA.prioridade())
+                    .equipeResponsavel(resultadoIA.equipeResponsavel())
+                    .andar(ticket.getAndar())
+                    .localizacao(ticket.getLocalizacao())
+                    .descricaoLocalizacao(ticket.getDescricaoLocalizacao())
+                    .descricaoTicketUsuario(ticket.getDescricaoTicketUsuario())
+                    .build();
+            ticketMestreRepository.save(novoMestre);
+            ticket.setTicketMestre(novoMestre);
+        }
+
+        ticketRepository.save(ticket);
+    }
+
 }

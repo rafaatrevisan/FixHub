@@ -10,6 +10,14 @@ CREATE TABLE pessoa (
   usuario_alterador INT NULL
 );
 
+CREATE TABLE lixeira (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  andar VARCHAR(255) NOT NULL,
+  localizacao VARCHAR(255) NOT NULL,
+  descricao_localizacao VARCHAR(255) NOT NULL,
+  descricao_ticket_usuario VARCHAR(255) NOT NULL
+);
+
 CREATE TABLE ticket_mestre (
     id INT AUTO_INCREMENT PRIMARY KEY,
     data_criacao_ticket TIMESTAMP NOT NULL,
@@ -28,18 +36,20 @@ CREATE TABLE ticket (
   id INT AUTO_INCREMENT PRIMARY KEY,
   data_criacao_ticket TIMESTAMP NOT NULL,
   data_atualizacao_ticket TIMESTAMP,
-  id_usuario INT NOT NULL,
+  id_usuario INT NULL,
   status VARCHAR(20) NOT NULL,
   prioridade VARCHAR(20) NOT NULL,
   equipe_responsavel VARCHAR(20) NOT NULL,
-  andar VARCHAR(255) NOT NULL,
-  localizacao VARCHAR(255) NOT NULL,
-  descricao_localizacao VARCHAR(255) NOT NULL,
+  andar VARCHAR(255),
+  localizacao VARCHAR(255),
+  descricao_localizacao VARCHAR(255),
   descricao_ticket_usuario VARCHAR(255),
   imagem VARCHAR(255),
   id_ticket_mestre INT NULL,
+  id_lixeira INT NULL,
   CONSTRAINT fk_ticket_usuario FOREIGN KEY (id_usuario) REFERENCES pessoa(id),
-  CONSTRAINT fk_ticket_ticket_mestre FOREIGN KEY (id_ticket_mestre) REFERENCES ticket_mestre(id)
+  CONSTRAINT fk_ticket_ticket_mestre FOREIGN KEY (id_ticket_mestre) REFERENCES ticket_mestre(id),
+  CONSTRAINT fk_ticket_lixeira FOREIGN KEY (id_lixeira) REFERENCES lixeira(id)
 );
 
 CREATE TABLE resolucao_ticket (

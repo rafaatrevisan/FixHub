@@ -72,4 +72,11 @@ public class TicketController {
     public void deletar(@PathVariable Integer id) {
         ticketService.deleteTicket(id);
     }
+
+    @PostMapping("/lixeira/{idLixeira}")
+    public ResponseEntity<String> criarTicketPorLixeira(@PathVariable Integer idLixeira) {
+        ticketService.criarTicketPorLixeira(idLixeira);
+        return ResponseEntity.ok("Ticket criado");
+    }
+
 }
