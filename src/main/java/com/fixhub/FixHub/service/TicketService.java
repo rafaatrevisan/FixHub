@@ -6,10 +6,10 @@ import com.fixhub.FixHub.model.entity.ResolucaoTicket;
 import com.fixhub.FixHub.model.entity.Ticket;
 import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.StatusTicket;
-import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
 import com.fixhub.FixHub.model.repository.TicketMestreRepository;
 import com.fixhub.FixHub.model.repository.TicketRepository;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,14 +26,13 @@ public class TicketService {
     private final TicketRepository ticketRepository;
     private final TicketMestreRepository ticketMestreRepository;
     private final ResolucaoTicketRepository resolucaoTicketRepository;
-    private final PessoaRepository pessoaRepository;
     private final GeminiService geminiService;
+    private final AuthUtil authUtil;
 
-    public Ticket criarTicket(Ticket ticket, Integer idUsuario) {
-        Pessoa usuario = pessoaRepository.findById(idUsuario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+    public Ticket criarTicket(Ticket ticket) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
-        ticket.setUsuario(usuario);
+        ticket.setUsuario(usuarioLogado);
         ticket.setStatus(StatusTicket.PENDENTE);
 
         LocalDateTime inicio = LocalDateTime.now().minusHours(24);
@@ -81,9 +80,15 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
-    public Ticket atualizarTicket(Integer id, Ticket ticketAtualizado, Integer idUsuario) {
+    public Ticket atualizarTicket(Integer id, Ticket ticketAtualizado) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         return ticketRepository.findById(id)
                 .map(ticketExistente -> {
+                    if (!ticketExistente.getUsuario().getId().equals(usuarioLogado.getId())) {
+                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você só pode atualizar seus próprios tickets");
+                    }
+
                     if (ticketExistente.getStatus() != StatusTicket.PENDENTE) {
                         throw new IllegalStateException("O ticket deve estar pendente para ser atualizado");
                     }
@@ -96,10 +101,7 @@ public class TicketService {
                         );
                     }
 
-                    Pessoa usuario = pessoaRepository.findById(idUsuario)
-                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
-
-                    ticketExistente.setUsuario(usuario);
+                    ticketExistente.setUsuario(usuarioLogado);
                     ticketExistente.setAndar(ticketAtualizado.getAndar());
                     ticketExistente.setLocalizacao(ticketAtualizado.getLocalizacao());
                     ticketExistente.setDescricaoLocalizacao(ticketAtualizado.getDescricaoLocalizacao());
@@ -132,8 +134,14 @@ public class TicketService {
 
     // Método para que um usuário possa excluir um ticket que ele abriu sem querer ou que tenha informações erradas (apenas se ainda estiver pendente)
     public void deleteTicket(Integer id) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         Ticket ticket = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
+
+        if (!ticket.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você só pode excluir seus próprios tickets");
+        }
 
         if (ticket.getStatus() != StatusTicket.PENDENTE) {
             throw new IllegalStateException("Somente tickets pendentes podem ser excluídos");
@@ -152,13 +160,14 @@ public class TicketService {
         ticketRepository.delete(ticket);
     }
 
+    public TicketDetalhesDTO buscarTicketComResolucao(Integer idTicket) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
-    public TicketDetalhesDTO buscarTicketComResolucao(Integer idTicket, Integer idUsuario) {
         Ticket ticket = ticketRepository.findById(idTicket)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
 
-        if (!ticket.getUsuario().getId().equals(idUsuario)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Este ticket não pertence ao usuário informado.");
+        if (!ticket.getUsuario().getId().equals(usuarioLogado.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Este ticket não pertence a você.");
         }
 
         if (ticket.getStatus() == StatusTicket.PENDENTE) {
@@ -192,8 +201,6 @@ public class TicketService {
 
         if (resolucaoOpt.isPresent()) {
             ResolucaoTicket resolucao = resolucaoOpt.get();
-            dto.setIdResolucao(resolucao.getId());
-            dto.setIdFuncionario(resolucao.getFuncionario().getId());
             dto.setNomeFuncionario(resolucao.getFuncionario().getNome());
             dto.setDescricaoResolucao(resolucao.getDescricao());
             dto.setDataResolucao(resolucao.getDataResolucao());
@@ -201,5 +208,4 @@ public class TicketService {
 
         return dto;
     }
-
 }

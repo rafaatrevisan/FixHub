@@ -31,8 +31,6 @@ public class TicketDetalhesDTO {
     private String imagem;
 
     // Dados da resolução
-    private Integer idResolucao;
-    private Integer idFuncionario;
     private String nomeFuncionario;
     private String descricaoResolucao;
     private LocalDateTime dataResolucao;

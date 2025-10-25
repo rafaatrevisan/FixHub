@@ -24,6 +24,9 @@ public class GeminiService {
 
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
+    /**
+     * Verifica as informações do ticket recebidas e deteriman a prioridade e equipe responsável
+     */
     public GeminiResult avaliarTicket(String descricao, String localizacao, String descricaoLocalizacao, String andar) {
         try {
             String prompt = """

@@ -1,14 +1,17 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.TicketMestreResponseDTO;
-import com.fixhub.FixHub.model.mapper.TicketMestreMapper;
+import com.fixhub.FixHub.model.entity.TicketMestre;
+import com.fixhub.FixHub.model.enums.PrioridadeTicket;
+import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.service.TicketMestreService;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/fixhub/tickets-mestre")
@@ -16,13 +19,20 @@ import java.util.stream.Collectors;
 public class TicketMestreController {
 
     private final TicketMestreService ticketMestreService;
+    private final AuthUtil authUtil;
 
-    @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    public List<TicketMestreResponseDTO> listarTodosTicketsMestre() {
-        return ticketMestreService.listarTicketsMestre()
-                .stream()
-                .map(TicketMestreMapper::toResponseDTO)
-                .collect(Collectors.toList());
+    @GetMapping("/filtro")
+    public ResponseEntity<List<TicketMestre>> listarComFiltros(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
+            @RequestParam(required = false) StatusTicket status,
+            @RequestParam(required = false) PrioridadeTicket prioridade,
+            @RequestParam(required = false) String andar
+    ) {
+
+        List<TicketMestre> lista = ticketMestreService.listarTicketsMestreComFiltros(
+                dataInicio, dataFim, status, prioridade, andar
+        );
+        return ResponseEntity.ok(lista);
     }
 }

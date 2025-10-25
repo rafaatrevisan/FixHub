@@ -34,37 +34,24 @@ public class PessoaController {
         return PessoaMapper.toResponseDTO(pessoaService.buscarPorId(id));
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<PessoaResponseDTO> criar(@RequestBody PessoaRequestDTO dto) {
-        Pessoa pessoa = PessoaMapper.toEntity(dto);
-        Pessoa salva = pessoaService.criarPessoa(pessoa);
-        return ResponseEntity.ok(PessoaMapper.toResponseDTO(salva));
-    }
-
     @PutMapping("{id}")
     public ResponseEntity<PessoaResponseDTO> atualizar(
             @PathVariable Integer id,
-            @RequestParam Integer idUsuarioAlterador,
             @RequestBody PessoaRequestDTO dto) {
         Pessoa pessoaAtualizada = PessoaMapper.toEntity(dto);
-        Pessoa atualizada = pessoaService.atualizarPessoa(id, pessoaAtualizada, idUsuarioAlterador);
+        Pessoa atualizada = pessoaService.atualizarPessoa(id, pessoaAtualizada);
         return ResponseEntity.ok(PessoaMapper.toResponseDTO(atualizada));
     }
 
     @PatchMapping("{id}/desativar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void desativar(
-            @PathVariable Integer id,
-            @RequestParam Integer idUsuarioAlterador) {
-        pessoaService.desativarPessoa(id, idUsuarioAlterador);
+    public void desativar(@PathVariable Integer id) {
+        pessoaService.desativarPessoa(id);
     }
 
     @PatchMapping("{id}/reativar")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reativar(
-            @PathVariable Integer id,
-            @RequestParam Integer idUsuarioAlterador) {
-        pessoaService.reativarPessoa(id, idUsuarioAlterador);
+    public void reativar(@PathVariable Integer id) {
+        pessoaService.reativarPessoa(id);
     }
 }
