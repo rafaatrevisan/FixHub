@@ -32,7 +32,7 @@ public class SecurityConfig {
                 .cors().and()
                 .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/login", "/public/**", "/h2-console/**").permitAll()
+                .antMatchers("/api/fixhub/login", "/api/fixhub/register", "/public/**", "/h2-console/**").permitAll() // Adicione /register
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
@@ -43,7 +43,6 @@ public class SecurityConfig {
 
         return http.build();
     }
-
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {

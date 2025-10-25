@@ -34,14 +34,6 @@ public class PessoaController {
         return PessoaMapper.toResponseDTO(pessoaService.buscarPorId(id));
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    public ResponseEntity<PessoaResponseDTO> criar(@RequestBody PessoaRequestDTO dto) {
-        Pessoa pessoa = PessoaMapper.toEntity(dto);
-        Pessoa salva = pessoaService.criarPessoa(pessoa);
-        return ResponseEntity.ok(PessoaMapper.toResponseDTO(salva));
-    }
-
     @PutMapping("{id}")
     public ResponseEntity<PessoaResponseDTO> atualizar(
             @PathVariable Integer id,
