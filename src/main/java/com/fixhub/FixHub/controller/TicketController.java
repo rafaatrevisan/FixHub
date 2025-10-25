@@ -1,5 +1,6 @@
 package com.fixhub.FixHub.controller;
 
+import com.fixhub.FixHub.model.dto.TicketDetalhesDTO;
 import com.fixhub.FixHub.model.dto.TicketRequestDTO;
 import com.fixhub.FixHub.model.dto.TicketResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
@@ -59,6 +60,13 @@ public class TicketController {
     @GetMapping("{id}")
     public TicketResponseDTO buscarPorId(@PathVariable Integer id) {
         return TicketMapper.toResponseDTO(ticketService.getTicketById(id));
+    }
+
+    @GetMapping("{id}/detalhes")
+    public TicketDetalhesDTO buscarDetalhes(
+            @PathVariable Integer id,
+            @RequestParam Integer idUsuario) {
+        return ticketService.buscarTicketComResolucao(id, idUsuario);
     }
 
     @DeleteMapping("{id}")

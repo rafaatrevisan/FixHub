@@ -21,9 +21,10 @@ public class TicketMapper {
     public static TicketResponseDTO toResponseDTO(Ticket ticket) {
         return TicketResponseDTO.builder()
                 .id(ticket.getId())
+                .idUsuario(ticket.getUsuario().getId())
+                .nomeUsuario(ticket.getUsuario().getNome())
                 .dataTicket(ticket.getDataTicket())
                 .dataAtualizacao(ticket.getDataAtualizacao())
-                .idUsuario(ticket.getUsuario().getId())
                 .status(ticket.getStatus())
                 .prioridade(ticket.getPrioridade())
                 .equipeResponsavel(ticket.getEquipeResponsavel())
@@ -34,4 +35,5 @@ public class TicketMapper {
                 .imagem(ticket.getImagem())
                 .build();
     }
+
 }

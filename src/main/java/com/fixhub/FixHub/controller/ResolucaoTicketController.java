@@ -16,18 +16,34 @@ public class ResolucaoTicketController {
 
     private final ResolucaoTicketService resolucaoService;
 
+    @PostMapping("/assumir")
+    public ResponseEntity<ResolucaoTicketResponseDTO> assumirTicket(
+            @RequestParam Integer idTicketMestre,
+            @RequestParam Integer idFuncionario) {
+        ResolucaoTicket resolucao = resolucaoService.assumirTicket(idTicketMestre, idFuncionario);
+        return ResponseEntity.ok(ResolucaoTicketMapper.toDTO(resolucao));
+    }
+
     @PostMapping("/resolver")
-    public ResponseEntity<ResolucaoTicketResponseDTO> resolverTicket(@RequestBody ResolucaoTicketRequestDTO dto) {
+    public ResponseEntity<ResolucaoTicketResponseDTO> resolverTicket(
+            @RequestBody ResolucaoTicketRequestDTO dto) {
         ResolucaoTicket resolucao = resolucaoService.resolverTicket(dto);
         return ResponseEntity.ok(ResolucaoTicketMapper.toDTO(resolucao));
     }
 
     @PostMapping("/reprovar")
     public ResponseEntity<ResolucaoTicketResponseDTO> reprovarTicket(
-            @RequestParam Integer idTicket,
+            @RequestParam Integer idTicketMestre,
             @RequestParam Integer idFuncionario) {
-
-        ResolucaoTicket resolucao = resolucaoService.reprovarTicket(idTicket, idFuncionario);
+        ResolucaoTicket resolucao = resolucaoService.reprovarTicket(idTicketMestre, idFuncionario);
         return ResponseEntity.ok(ResolucaoTicketMapper.toDTO(resolucao));
+    }
+
+    @PostMapping("/renunciar")
+    public ResponseEntity<String> renunciarTicket(
+            @RequestParam Integer idTicketMestre,
+            @RequestParam Integer idFuncionario) {
+        resolucaoService.renunciarTicket(idTicketMestre, idFuncionario);
+        return ResponseEntity.ok("Ticket Mestre e todos os tickets vinculados retornados para pendente.");
     }
 }

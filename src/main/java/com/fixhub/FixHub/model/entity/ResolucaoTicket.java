@@ -20,9 +20,10 @@ public class ResolucaoTicket {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
+    // o ticket nesse caso é um ticket mestre
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_ticket", nullable = false)
-    private Ticket ticket;
+    @JoinColumn(name = "id_ticket_mestre", nullable = false)
+    private TicketMestre ticket;
 
     @Column(name = "descricao", nullable = false, length = 255)
     private String descricao;

@@ -19,5 +19,8 @@ public class PessoaResponseDTO {
     private LocalDate dataNascimento;
     private String telefone;
     private Cargo cargo;
+    private boolean ativo;
     private LocalDateTime dataCadastro;
+    private LocalDateTime dataAlteracao;
+    private Integer usuarioAlterador;
 }

@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "usuario")
@@ -27,9 +28,17 @@ public class Usuario {
     @Column(name = "senha", length = 255)
     private String senha;
 
+    @Column(nullable = false)
+    private Boolean ativo;
+
     public Usuario(Pessoa pessoa, String email, String senha) {
         this.pessoa = pessoa;
         this.email = email;
         this.senha = senha;
+    }
+
+    @PrePersist
+    protected void onCreate() {
+        this.ativo = true;
     }
 }

@@ -14,12 +14,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TicketResponseDTO {
+public class TicketMestreResponseDTO {
     private Integer id;
-    private Integer idUsuario;
-    private String nomeUsuario;
-    private LocalDateTime dataTicket;
-    private LocalDateTime dataAtualizacao;
+    private LocalDateTime dataCriacaoTicket;
     private StatusTicket status;
     private PrioridadeTicket prioridade;
     private EquipeResponsavel equipeResponsavel;

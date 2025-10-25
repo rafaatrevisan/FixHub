@@ -14,10 +14,11 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TicketResponseDTO {
-    private Integer id;
-    private Integer idUsuario;
+public class TicketDetalhesDTO {
+    // Dados do ticket
+    private Integer idTicket;
     private String nomeUsuario;
+    private Integer idUsuario;
     private LocalDateTime dataTicket;
     private LocalDateTime dataAtualizacao;
     private StatusTicket status;
@@ -28,4 +29,11 @@ public class TicketResponseDTO {
     private String descricaoLocalizacao;
     private String descricaoTicketUsuario;
     private String imagem;
+
+    // Dados da resolução
+    private Integer idResolucao;
+    private Integer idFuncionario;
+    private String nomeFuncionario;
+    private String descricaoResolucao;
+    private LocalDateTime dataResolucao;
 }

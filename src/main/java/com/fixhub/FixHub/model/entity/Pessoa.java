@@ -38,8 +38,25 @@ public class Pessoa {
     @Column(name = "data_cadastro", nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
 
+    @Column(nullable = false)
+    private Boolean ativo;
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+
+    @Column(name = "data_alteracao")
+    private LocalDateTime dataAlteracao;
+
+    @Column(name = "usuario_alterador")
+    private Integer usuarioAlterador;
+
     @PrePersist
     protected void onCreate() {
         this.dataCadastro = LocalDateTime.now();
+        this.ativo = true;
     }
 }

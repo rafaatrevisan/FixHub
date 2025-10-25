@@ -12,26 +12,22 @@ import javax.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "ticket")
+@Table(name = "ticket_mestre")
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Ticket {
+public class TicketMestre {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "data_criacao_ticket", nullable = false, updatable = false)
-    private LocalDateTime dataTicket;
+    @Column(name = "data_criacao_ticket", nullable = false)
+    private LocalDateTime dataCriacaoTicket;
 
-    @Column(name = "data_atualizacao_ticket")
+    @Column(name = "data_atualizacao")
     private LocalDateTime dataAtualizacao;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", nullable = false)
-    private Pessoa usuario;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false, length = 20)
@@ -42,7 +38,7 @@ public class Ticket {
     private PrioridadeTicket prioridade;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "equipe_responsavel", nullable = false, length = 20)
+    @Column(name = "equipe_responsavel", nullable = false, length = 50)
     private EquipeResponsavel equipeResponsavel;
 
     @Column(name = "andar", length = 255)
@@ -60,17 +56,8 @@ public class Ticket {
     @Column(name = "imagem", length = 255)
     private String imagem;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_ticket_mestre")
-    private TicketMestre ticketMestre;
-
     @PrePersist
     protected void onCreate() {
-        this.dataTicket = LocalDateTime.now();
-    }
-
-    @PreUpdate
-    protected void onUpdate() {
-        this.dataAtualizacao = LocalDateTime.now();
+        this.dataCriacaoTicket = LocalDateTime.now();
     }
 }

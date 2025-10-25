@@ -22,7 +22,11 @@ public class PessoaMapper {
                 .dataNascimento(pessoa.getDataNascimento())
                 .telefone(pessoa.getTelefone())
                 .cargo(pessoa.getCargo())
+                .ativo(pessoa.isAtivo())
                 .dataCadastro(pessoa.getDataCadastro())
+                .dataAlteracao(pessoa.getDataAlteracao())
+                .usuarioAlterador(pessoa.getUsuarioAlterador())
                 .build();
     }
+
 }
