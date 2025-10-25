@@ -5,14 +5,18 @@ import com.fixhub.FixHub.model.dto.TicketRequestDTO;
 import com.fixhub.FixHub.model.dto.TicketResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Ticket;
+import com.fixhub.FixHub.model.enums.PrioridadeTicket;
+import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.model.mapper.TicketMapper;
 import com.fixhub.FixHub.service.TicketService;
 import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -24,15 +28,6 @@ public class TicketController {
 
     private final TicketService ticketService;
     private final AuthUtil authUtil;
-
-    @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    public List<TicketResponseDTO> listarTodos() {
-        return ticketService.getAllTickets()
-                .stream()
-                .map(TicketMapper::toResponseDTO)
-                .collect(Collectors.toList());
-    }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -57,14 +52,9 @@ public class TicketController {
         }
     }
 
-    @GetMapping("{id}")
-    public TicketResponseDTO buscarPorId(@PathVariable Integer id) {
-        return TicketMapper.toResponseDTO(ticketService.getTicketById(id));
-    }
-
-    @GetMapping("{id}/detalhes")
+    @GetMapping("detalhes/{id}")
     public TicketDetalhesDTO buscarDetalhes(@PathVariable Integer id) {
-        return ticketService.buscarTicketComResolucao(id);
+        return ticketService.buscarTicketComDetalhes(id);
     }
 
     @DeleteMapping("{id}")
@@ -77,6 +67,25 @@ public class TicketController {
     public ResponseEntity<String> criarTicketPorLixeira(@PathVariable Integer idLixeira) {
         ticketService.criarTicketPorLixeira(idLixeira);
         return ResponseEntity.ok("Ticket criado");
+    }
+
+    @GetMapping("/listar-meus-tickets")
+    public ResponseEntity<List<TicketResponseDTO>> listarMeusTicketsComFiltros(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
+            @RequestParam(required = false) StatusTicket status,
+            @RequestParam(required = false) PrioridadeTicket prioridade,
+            @RequestParam(required = false) String andar
+    ) {
+        List<Ticket> meusTickets = ticketService.listarMeusTicketsComFiltros(
+                dataInicio, dataFim, status, prioridade, andar
+        );
+
+        List<TicketResponseDTO> response = meusTickets.stream()
+                .map(TicketMapper::toResponseDTO)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.ok(response);
     }
 
 }

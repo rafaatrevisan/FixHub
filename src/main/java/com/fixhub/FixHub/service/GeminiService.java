@@ -21,6 +21,8 @@ public class GeminiService {
 
     @Value("${gemini.api.key}")
     private String apiKey;
+    private static final double THRESHOLD_COMPARACAO_MESTRE = 0.85;
+    private static final double THRESHOLD_MESMO_PROBLEMA = 0.65;
 
     private static final String GEMINI_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
@@ -103,7 +105,7 @@ public class GeminiService {
      * Retorna um valor entre 0 e 1.
      */
     public Object compararComListaTicketsMestre(Ticket novoTicket, List<TicketMestre> ticketsMestreLista) {
-        double threshold = 0.85;
+        double threshold = THRESHOLD_COMPARACAO_MESTRE;
         int idMaisSimilar = -1;
         double maiorSimilaridade = 0.0;
 
@@ -182,27 +184,45 @@ public class GeminiService {
     }
 
     /**
-     * Verifica se o problema do ticket a ser atualizado ainda é o mesmo, retornando true ou false
+     * Verifica se o problema do ticket a ser atualizado ainda é o mesmo, usando threshold de similaridade
      */
     public boolean mesmoProblema(Ticket ticketOriginal, Ticket ticketAtualizado) {
+        double threshold = 0.70;
+
         try {
             String prompt = """
-            Você é um assistente que gerencia tickets de manutenção no Terminal Rodoviário de Campinas.
-            Compare os dois tickets abaixo e responda SOMENTE com "true" se eles se referem ao mesmo problema
-            ou "false" se forem problemas diferentes.
-
-            Ticket Original:
-            - Andar: %s
-            - Localização: %s
-            - Detalhes da localização: %s
-            - Descrição: %s
-
-            Ticket Atualizado:
-            - Andar: %s
-            - Localização: %s
-            - Detalhes da localização: %s
-            - Descrição: %s
-            """.formatted(
+        Você é um especialista em manutenção predial do Terminal Rodoviário de Campinas.
+        Sua tarefa é determinar se dois tickets se referem ao MESMO PROBLEMA FÍSICO/TÉCNICO, mesmo que a descrição tenha sido refinada ou corrigida.
+        
+        IMPORTANTE: Considere o mesmo problema quando:
+        - O defeito/problema técnico é o mesmo (ex: vazamento, rachadura, lâmpada queimada)
+        - A localização é a mesma ou muito próxima
+        - Apenas houve correção/melhoria na descrição ou detalhes adicionais
+        
+        Considere problema DIFERENTE quando:
+        - O tipo de defeito mudou completamente (ex: de elétrico para hidráulico)
+        - A localização mudou significativamente (ex: de banheiro para área de embarque)
+        - É claramente um problema novo e não relacionado
+        
+        TICKET ORIGINAL:
+        - Andar: %s
+        - Localização: %s
+        - Detalhes da localização: %s
+        - Descrição do problema: %s
+        
+        TICKET ATUALIZADO:
+        - Andar: %s
+        - Localização: %s
+        - Detalhes da localização: %s
+        - Descrição do problema: %s
+        
+        Analise se estes tickets se referem ao mesmo problema técnico/físico.
+        Responda SOMENTE com um número decimal entre 0 e 1, onde:
+        - 1.0 = Definitivamente o mesmo problema
+        - 0.8-0.9 = Muito provavelmente o mesmo problema com mais detalhes
+        - 0.5-0.7 = Pode ser o mesmo problema, mas com mudanças significativas
+        - 0.0-0.4 = Problemas diferentes
+        """.formatted(
                     ticketOriginal.getAndar(),
                     ticketOriginal.getLocalizacao(),
                     ticketOriginal.getDescricaoLocalizacao(),
@@ -214,12 +234,12 @@ public class GeminiService {
             );
 
             String requestBody = """
-            {
-              "contents": [{
-                "parts":[{"text": "%s"}]
-              }]
-            }
-            """.formatted(prompt.replace("\"", "\\\""));
+        {
+          "contents": [{
+            "parts":[{"text": "%s"}]
+          }]
+        }
+        """.formatted(prompt.replace("\"", "\\\""));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(GEMINI_URL))
@@ -236,15 +256,19 @@ public class GeminiService {
 
             String rawText = root.path("candidates").get(0)
                     .path("content").path("parts").get(0)
-                    .path("text").asText().trim().toLowerCase();
+                    .path("text").asText().trim();
 
-            return rawText.contains("true");
+            double similarityScore = Double.parseDouble(rawText);
 
+            return similarityScore >= threshold;
+
+        } catch (NumberFormatException e) {
+            System.err.println("Erro ao parsear resposta da IA para similaridade: " + e.getMessage());
+            return false;
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Erro ao chamar API do Gemini para comparação de tickets", e);
         }
     }
-
 
     public record GeminiResult(PrioridadeTicket prioridade, EquipeResponsavel equipeResponsavel) {}
 }
