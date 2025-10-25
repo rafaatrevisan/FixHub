@@ -3,12 +3,14 @@ package com.fixhub.FixHub.model.repository;
 import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.StatusTicket;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
-public interface TicketMestreRepository extends JpaRepository<TicketMestre, Integer> {
+public interface TicketMestreRepository extends JpaRepository<TicketMestre, Integer>,
+        JpaSpecificationExecutor<TicketMestre> {
 
     @Query("""
         SELECT t 

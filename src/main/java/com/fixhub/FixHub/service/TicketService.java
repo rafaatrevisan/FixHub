@@ -192,8 +192,6 @@ public class TicketService {
 
         if (resolucaoOpt.isPresent()) {
             ResolucaoTicket resolucao = resolucaoOpt.get();
-            dto.setIdResolucao(resolucao.getId());
-            dto.setIdFuncionario(resolucao.getFuncionario().getId());
             dto.setNomeFuncionario(resolucao.getFuncionario().getNome());
             dto.setDescricaoResolucao(resolucao.getDescricao());
             dto.setDataResolucao(resolucao.getDataResolucao());
