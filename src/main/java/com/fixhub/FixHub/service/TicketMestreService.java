@@ -5,11 +5,9 @@ import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.PrioridadeTicket;
 import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.model.enums.EquipeResponsavel;
-import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.model.repository.TicketMestreRepository;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,7 +21,7 @@ import java.util.List;
 public class TicketMestreService {
 
     private final TicketMestreRepository ticketMestreRepository;
-    private final PessoaRepository pessoaRepository;
+    private final AuthUtil authUtil;
 
     public List<TicketMestre> listarTicketsMestreComFiltros(
             LocalDateTime dataInicio,
@@ -32,12 +30,11 @@ public class TicketMestreService {
             PrioridadeTicket prioridade,
             String andar
     ) {
-        // 🔹 Pega o usuário logado
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String emailUsuario = auth.getName();
+        Pessoa funcionario = authUtil.getPessoaUsuarioLogado();
 
-        Pessoa funcionario = pessoaRepository.findByEmailUsuario(emailUsuario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+        if (!authUtil.isUsuarioFuncionario()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas funcionários podem acessar esta funcionalidade");
+        }
 
         EquipeResponsavel equipeFuncionario;
         try {

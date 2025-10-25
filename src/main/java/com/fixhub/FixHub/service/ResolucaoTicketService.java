@@ -7,10 +7,10 @@ import com.fixhub.FixHub.model.entity.Ticket;
 import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.Cargo;
 import com.fixhub.FixHub.model.enums.StatusTicket;
-import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
 import com.fixhub.FixHub.model.repository.TicketMestreRepository;
 import com.fixhub.FixHub.model.repository.TicketRepository;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -25,13 +25,15 @@ public class ResolucaoTicketService {
 
     private final TicketRepository ticketRepository;
     private final TicketMestreRepository ticketMestreRepository;
-    private final PessoaRepository pessoaRepository;
     private final ResolucaoTicketRepository resolucaoTicketRepository;
+    private final AuthUtil authUtil;
 
     /**
      * Assumir um TicketMestre e iniciar o trabalho.
      */
-    public ResolucaoTicket assumirTicket(Integer idTicketMestre, Integer idFuncionario) {
+    public ResolucaoTicket assumirTicket(Integer idTicketMestre) {
+        Pessoa funcionarioLogado = authUtil.getPessoaUsuarioLogado();
+
         TicketMestre mestre = ticketMestreRepository.findById(idTicketMestre)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
@@ -39,10 +41,7 @@ public class ResolucaoTicketService {
             throw new IllegalStateException("Somente tickets pendentes podem ser assumidos.");
         }
 
-        Pessoa funcionario = pessoaRepository.findById(idFuncionario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
-
-        if (funcionario.getCargo() == Cargo.CLIENTE) {
+        if (funcionarioLogado.getCargo() == Cargo.CLIENTE) {
             throw new IllegalStateException("Usuário não tem permissão para assumir tickets.");
         }
 
@@ -60,7 +59,7 @@ public class ResolucaoTicketService {
 
             ResolucaoTicket resolucao = ResolucaoTicket.builder()
                     .ticket(mestre)
-                    .funcionario(funcionario)
+                    .funcionario(funcionarioLogado)
                     .descricao("")
                     .build();
 
@@ -72,7 +71,9 @@ public class ResolucaoTicketService {
     /**
      * Renunciar um TicketMestre e voltar para PENDENTE.
      */
-    public void renunciarTicket(Integer idTicketMestre, Integer idFuncionario) {
+    public void renunciarTicket(Integer idTicketMestre) {
+        Pessoa funcionarioLogado = authUtil.getPessoaUsuarioLogado();
+
         TicketMestre mestre = ticketMestreRepository.findById(idTicketMestre)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
@@ -81,7 +82,7 @@ public class ResolucaoTicketService {
         }
 
         ResolucaoTicket resolucao = resolucaoTicketRepository
-                .findByTicketIdAndFuncionarioId(mestre.getId(), idFuncionario)
+                .findByTicketIdAndFuncionarioId(mestre.getId(), funcionarioLogado.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não assumiu este ticket mestre."));
 
         resolucaoTicketRepository.delete(resolucao);
@@ -102,12 +103,19 @@ public class ResolucaoTicketService {
      * Resolver um TicketMestre já assumido.
      */
     public ResolucaoTicket resolverTicket(ResolucaoTicketRequestDTO dto) {
+        Pessoa funcionarioLogado = authUtil.getPessoaUsuarioLogado();
+
         TicketMestre mestre = ticketMestreRepository.findById(dto.getIdTicket())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
         if (mestre.getStatus() != StatusTicket.EM_ANDAMENTO) {
             throw new IllegalStateException("Somente tickets mestres em andamento podem ser resolvidos.");
         }
+
+        // Verifica se o funcionário logado é quem assumiu o ticket
+        ResolucaoTicket resolucaoExistente = resolucaoTicketRepository
+                .findByTicketIdAndFuncionarioId(mestre.getId(), funcionarioLogado.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não assumiu este ticket mestre."));
 
         mestre.setStatus(StatusTicket.CONCLUIDO);
         mestre.setDataAtualizacao(LocalDateTime.now());
@@ -118,29 +126,21 @@ public class ResolucaoTicketService {
             t.setStatus(StatusTicket.CONCLUIDO);
             t.setDataAtualizacao(LocalDateTime.now());
             ticketRepository.save(t);
-
-            ResolucaoTicket resolucao = resolucaoTicketRepository
-                    .findByTicketIdAndFuncionarioId(mestre.getId(), dto.getIdFuncionario())
-                    .orElse(ResolucaoTicket.builder()
-                            .ticket(mestre)
-                            .funcionario(pessoaRepository.findById(dto.getIdFuncionario())
-                                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado")))
-                            .descricao("") 
-                            .build());
-
-            resolucao.setDescricao(dto.getDescricao());
-            resolucao.setDataResolucao(LocalDateTime.now());
-            resolucaoTicketRepository.save(resolucao);
         }
 
-        return resolucaoTicketRepository.findByTicketIdAndFuncionarioId(mestre.getId(), dto.getIdFuncionario())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao salvar resolução"));
+        // Atualiza a resolução existente
+        resolucaoExistente.setDescricao(dto.getDescricao());
+        resolucaoExistente.setDataResolucao(LocalDateTime.now());
+
+        return resolucaoTicketRepository.save(resolucaoExistente);
     }
 
     /**
      * Reprovar um TicketMestre.
      */
-    public ResolucaoTicket reprovarTicket(Integer idTicketMestre, Integer idFuncionario) {
+    public ResolucaoTicket reprovarTicket(Integer idTicketMestre) {
+        Pessoa funcionarioLogado = authUtil.getPessoaUsuarioLogado();
+
         TicketMestre mestre = ticketMestreRepository.findById(idTicketMestre)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
@@ -153,26 +153,26 @@ public class ResolucaoTicketService {
         ticketMestreRepository.save(mestre);
 
         List<Ticket> ticketsVinculados = ticketRepository.findByTicketMestreId(mestre.getId());
+        ResolucaoTicket ultimaResolucao = null;
+
         for (Ticket t : ticketsVinculados) {
             t.setStatus(StatusTicket.REPROVADO);
             t.setDataAtualizacao(LocalDateTime.now());
             ticketRepository.save(t);
 
             ResolucaoTicket resolucao = resolucaoTicketRepository
-                    .findByTicketIdAndFuncionarioId(mestre.getId(), idFuncionario)
+                    .findByTicketIdAndFuncionarioId(mestre.getId(), funcionarioLogado.getId())
                     .orElse(ResolucaoTicket.builder()
                             .ticket(mestre)
-                            .funcionario(pessoaRepository.findById(idFuncionario)
-                                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado")))
+                            .funcionario(funcionarioLogado)
                             .descricao("")
                             .build());
 
             resolucao.setDescricao("Ticket fake/incoerente");
             resolucao.setDataResolucao(LocalDateTime.now());
-            resolucaoTicketRepository.save(resolucao);
+            ultimaResolucao = resolucaoTicketRepository.save(resolucao);
         }
 
-        return resolucaoTicketRepository.findByTicketIdAndFuncionarioId(mestre.getId(), idFuncionario)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Erro ao salvar reprovação"));
+        return ultimaResolucao;
     }
 }

@@ -4,6 +4,7 @@ import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.PrioridadeTicket;
 import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.service.TicketMestreService;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -18,16 +19,17 @@ import java.util.List;
 public class TicketMestreController {
 
     private final TicketMestreService ticketMestreService;
+    private final AuthUtil authUtil;
 
     @GetMapping("/filtro")
     public ResponseEntity<List<TicketMestre>> listarComFiltros(
-            @RequestParam Integer idFuncionario,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicio,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFim,
             @RequestParam(required = false) StatusTicket status,
             @RequestParam(required = false) PrioridadeTicket prioridade,
             @RequestParam(required = false) String andar
     ) {
+
         List<TicketMestre> lista = ticketMestreService.listarTicketsMestreComFiltros(
                 dataInicio, dataFim, status, prioridade, andar
         );

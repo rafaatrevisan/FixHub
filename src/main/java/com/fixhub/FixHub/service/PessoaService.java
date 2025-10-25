@@ -4,6 +4,7 @@ import com.fixhub.FixHub.exception.BusinessException;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.enums.Cargo;
 import com.fixhub.FixHub.model.repository.PessoaRepository;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.regex.Pattern;
 public class PessoaService {
 
     private final PessoaRepository pessoaRepository;
+    private final AuthUtil authUtil;
 
     public List<Pessoa> listarTodos() {
         return pessoaRepository.findByAtivoTrue();
@@ -42,15 +44,17 @@ public class PessoaService {
         return pessoaRepository.save(pessoa);
     }
 
-    public Pessoa atualizarPessoa(Integer id, Pessoa pessoaAtualizada, Integer idUsuarioAlterador) {
-        Pessoa usuarioAlterador = pessoaRepository.findById(idUsuarioAlterador)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário alterador não encontrado"));
+    public Pessoa atualizarPessoa(Integer id, Pessoa pessoaAtualizada) {
+        // Obtém o usuário logado automaticamente
+        Pessoa usuarioAlterador = authUtil.getPessoaUsuarioLogado();
 
         boolean ehGerenteOuSuporte = usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE;
         boolean ehProprioUsuario = usuarioAlterador.getId().equals(id);
+
         if (!(ehGerenteOuSuporte || ehProprioUsuario)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário sem permissão para alteração.");
         }
+
         return pessoaRepository.findById(id)
                 .map(pessoa -> {
                     if (!pessoa.isAtivo()) {
@@ -63,15 +67,15 @@ public class PessoaService {
                     validarPessoa(pessoa);
 
                     pessoa.setDataAlteracao(LocalDateTime.now());
-                    pessoa.setUsuarioAlterador(idUsuarioAlterador);
+                    pessoa.setUsuarioAlterador(usuarioAlterador.getId());
                     return pessoaRepository.save(pessoa);
                 })
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
     }
 
-    public void desativarPessoa(Integer id, Integer idUsuarioAlterador) {
-        Pessoa usuarioAlterador = pessoaRepository.findById(idUsuarioAlterador)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário alterador não encontrado"));
+    public void desativarPessoa(Integer id) {
+        // Obtém o usuário logado automaticamente
+        Pessoa usuarioAlterador = authUtil.getPessoaUsuarioLogado();
 
         boolean ehGerenteOuSuporte = usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE;
         boolean ehProprioUsuario = usuarioAlterador.getId().equals(id);
@@ -83,13 +87,13 @@ public class PessoaService {
         Pessoa pessoa = buscarPorId(id);
         pessoa.setAtivo(false);
         pessoa.setDataAlteracao(LocalDateTime.now());
-        pessoa.setUsuarioAlterador(idUsuarioAlterador);
+        pessoa.setUsuarioAlterador(usuarioAlterador.getId());
         pessoaRepository.save(pessoa);
     }
 
-    public void reativarPessoa(Integer id, Integer idUsuarioAlterador) {
-        Pessoa usuarioAlterador = pessoaRepository.findById(idUsuarioAlterador)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário alterador não encontrado"));
+    public void reativarPessoa(Integer id) {
+        // Obtém o usuário logado automaticamente
+        Pessoa usuarioAlterador = authUtil.getPessoaUsuarioLogado();
 
         if (!(usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário sem permissão para reativação.");
@@ -100,7 +104,7 @@ public class PessoaService {
 
         pessoa.setAtivo(true);
         pessoa.setDataAlteracao(LocalDateTime.now());
-        pessoa.setUsuarioAlterador(idUsuarioAlterador);
+        pessoa.setUsuarioAlterador(usuarioAlterador.getId());
         pessoaRepository.save(pessoa);
     }
 

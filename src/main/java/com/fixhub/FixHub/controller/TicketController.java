@@ -6,8 +6,8 @@ import com.fixhub.FixHub.model.dto.TicketResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Ticket;
 import com.fixhub.FixHub.model.mapper.TicketMapper;
-import com.fixhub.FixHub.service.PessoaService;
 import com.fixhub.FixHub.service.TicketService;
+import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 public class TicketController {
 
     private final TicketService ticketService;
-    private final PessoaService pessoaService;
+    private final AuthUtil authUtil;
 
     @GetMapping
     @ResponseStatus(HttpStatus.OK)
@@ -37,18 +37,18 @@ public class TicketController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<TicketResponseDTO> criar(@RequestBody TicketRequestDTO dto) {
-        Pessoa usuario = pessoaService.buscarPorId(dto.getIdUsuario());
+        Pessoa usuario = authUtil.getPessoaUsuarioLogado();
         Ticket ticket = TicketMapper.toEntity(dto, usuario);
-        Ticket salvo = ticketService.criarTicket(ticket, dto.getIdUsuario());
+        Ticket salvo = ticketService.criarTicket(ticket);
         return ResponseEntity.ok(TicketMapper.toResponseDTO(salvo));
     }
 
     @PutMapping("{id}")
     public ResponseEntity<?> atualizar(@PathVariable Integer id, @RequestBody TicketRequestDTO dto) {
         try {
-            Pessoa usuario = pessoaService.buscarPorId(dto.getIdUsuario());
+            Pessoa usuario = authUtil.getPessoaUsuarioLogado();
             Ticket ticket = TicketMapper.toEntity(dto, usuario);
-            Ticket atualizado = ticketService.atualizarTicket(id, ticket, dto.getIdUsuario());
+            Ticket atualizado = ticketService.atualizarTicket(id, ticket);
             return ResponseEntity.ok(TicketMapper.toResponseDTO(atualizado));
         } catch (IllegalStateException e) {
             return ResponseEntity
@@ -63,10 +63,8 @@ public class TicketController {
     }
 
     @GetMapping("{id}/detalhes")
-    public TicketDetalhesDTO buscarDetalhes(
-            @PathVariable Integer id,
-            @RequestParam Integer idUsuario) {
-        return ticketService.buscarTicketComResolucao(id, idUsuario);
+    public TicketDetalhesDTO buscarDetalhes(@PathVariable Integer id) {
+        return ticketService.buscarTicketComResolucao(id);
     }
 
     @DeleteMapping("{id}")
