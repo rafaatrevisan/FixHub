@@ -33,4 +33,4 @@ build/
 .vscode/
 
 # Arquivo com dados sensíveis (API Key)
-/src/main/resources/application.properties
+/src/main/resources/application-example.properties
