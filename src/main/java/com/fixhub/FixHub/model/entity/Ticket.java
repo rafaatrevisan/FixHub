@@ -30,7 +30,7 @@ public class Ticket {
     private LocalDateTime dataAtualizacao;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_usuario", nullable = false)
+    @JoinColumn(name = "id_usuario", nullable = true)
     private Pessoa usuario;
 
     @Enumerated(EnumType.STRING)
@@ -65,7 +65,7 @@ public class Ticket {
     private TicketMestre ticketMestre;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "id_lixeira")
+    @JoinColumn(name = "id_lixeira", nullable = true)
     private Lixeira lixeira;
 
     @PrePersist
