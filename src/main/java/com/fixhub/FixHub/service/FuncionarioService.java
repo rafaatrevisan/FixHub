@@ -69,7 +69,12 @@ public class FuncionarioService {
 
         List<Pessoa> lista = pessoaRepository.findAll(spec);
 
-        return lista.stream().map(PessoaMapper::toResponseDTO).collect(Collectors.toList());
+        return lista.stream()
+                .map(pessoa -> {
+                    Usuario usuario = usuarioRepository.findByPessoaId(pessoa.getId()).orElse(null);
+                    return PessoaMapper.toResponseDTO(pessoa, usuario);
+                })
+                .collect(Collectors.toList());
     }
 
     public PessoaResponseDTO cadastrarFuncionario(FuncionarioRequestDTO dto) {

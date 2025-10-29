@@ -23,4 +23,5 @@ public class PessoaResponseDTO {
     private LocalDateTime dataCadastro;
     private LocalDateTime dataAlteracao;
     private Integer usuarioAlterador;
+    private String email;
 }
