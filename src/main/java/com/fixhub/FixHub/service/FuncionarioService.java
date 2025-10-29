@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -30,6 +31,7 @@ public class FuncionarioService {
     private final PessoaRepository pessoaRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuthUtil authUtil;
+    private final PasswordEncoder passwordEncoder;
 
     /**
      * Listar funcionários com filtros usando Specification
@@ -77,6 +79,10 @@ public class FuncionarioService {
 
         validarDadosFuncionario(dto);
 
+        if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
+            throw new BusinessException("Email já está em uso");
+        }
+
         Pessoa novoFuncionario = Pessoa.builder()
                 .nome(dto.getNome())
                 .dataNascimento(dto.getDataNascimento())
@@ -87,7 +93,11 @@ public class FuncionarioService {
 
         pessoaRepository.save(novoFuncionario);
 
-        Usuario usuario = new Usuario(novoFuncionario, dto.getEmail(), dto.getSenha());
+        Usuario usuario = new Usuario(
+                novoFuncionario,
+                dto.getEmail(),
+                passwordEncoder.encode(dto.getSenha())
+        );
         usuario.setAtivo(true);
         usuarioRepository.save(usuario);
 
@@ -114,8 +124,16 @@ public class FuncionarioService {
 
         Usuario usuario = usuarioRepository.findByPessoaId(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário do funcionário não encontrado"));
+
+        usuarioRepository.findByEmail(dto.getEmail())
+                .ifPresent(u -> {
+                    if (!u.getId().equals(usuario.getId())) {
+                        throw new BusinessException("Email já está em uso por outro usuário");
+                    }
+                });
+
         usuario.setEmail(dto.getEmail());
-        usuario.setSenha(dto.getSenha());
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha())); // Criptografar aqui também
         usuarioRepository.save(usuario);
 
         return PessoaMapper.toResponseDTO(funcionario);
