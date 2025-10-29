@@ -32,7 +32,7 @@ public class SecurityConfig {
                 .cors().and()
                 .csrf().disable()
                 .authorizeRequests()
-                .antMatchers("/api/fixhub/login", "/api/fixhub/register", "/api/fixhub/tickets/lixeira/*", "/public/**", "/h2-console/**").permitAll() // Adicione /register
+                .antMatchers("/api/fixhub/login", "/api/fixhub/admin/login", "/api/fixhub/register", "/api/fixhub/tickets/lixeira/*", "/public/**", "/h2-console/**").permitAll() // Adicione /register
                 .anyRequest().authenticated()
                 .and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
