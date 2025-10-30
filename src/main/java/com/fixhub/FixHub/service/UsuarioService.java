@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,6 +29,7 @@ public class UsuarioService {
     private final PessoaRepository pessoaRepository;
     private final UsuarioRepository usuarioRepository;
     private final AuthUtil authUtil;
+    private final PasswordEncoder passwordEncoder;
 
     public List<PessoaResponseDTO> listarUsuariosComFiltros(
             String nome,
@@ -49,10 +51,6 @@ public class UsuarioService {
             spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
         }
 
-        if (email != null && !email.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.join("usuario").get("email")), "%" + email.toLowerCase() + "%"));
-        }
-
         if (telefone != null && !telefone.isBlank()) {
             spec = spec.and((root, query, cb) -> cb.like(root.get("telefone"), "%" + telefone + "%"));
         }
@@ -70,10 +68,16 @@ public class UsuarioService {
         }
 
         List<Pessoa> lista = pessoaRepository.findAll(spec);
-        return lista.stream().map(PessoaMapper::toResponseDTO).collect(Collectors.toList());
+
+        return lista.stream()
+                .map(pessoa -> {
+                    Usuario usuario = usuarioRepository.findByPessoaId(pessoa.getId()).orElse(null);
+                    return PessoaMapper.toResponseDTO(pessoa, usuario);
+                })
+                .collect(Collectors.toList());
     }
 
-    public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado) {
+    public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email, String senha) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
@@ -104,7 +108,18 @@ public class UsuarioService {
         usuario.setUsuarioAlterador(authUtil.getIdPessoaUsuarioLogado());
         pessoaRepository.save(usuario);
 
-        return PessoaMapper.toResponseDTO(usuario);
+        Usuario usuarioEntity = usuarioRepository.findByPessoaId(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro na tabela usuario não encontrado"));
+
+        if (email != null && !email.isBlank()) {
+            usuarioEntity.setEmail(email);
+        }
+        if (senha != null && !senha.isBlank()) {
+            usuarioEntity.setSenha(passwordEncoder.encode(senha));
+        }
+        usuarioRepository.save(usuarioEntity);
+
+        return PessoaMapper.toResponseDTO(usuario, usuarioEntity);
     }
 
     public void desativarUsuario(Integer id) {

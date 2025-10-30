@@ -30,7 +30,7 @@ public class PessoaMapper {
                 .build();
     }
 
-    public static PessoaResponseDTO toResponseDTO(Pessoa pessoa, String email) {
+    public static PessoaResponseDTO toResponseDTO(Pessoa pessoa, Usuario usuario) {
         return PessoaResponseDTO.builder()
                 .id(pessoa.getId())
                 .nome(pessoa.getNome())
@@ -41,11 +41,7 @@ public class PessoaMapper {
                 .ativo(pessoa.getAtivo())
                 .dataAlteracao(pessoa.getDataAlteracao())
                 .usuarioAlterador(pessoa.getUsuarioAlterador())
-                .email(email)
+                .email(usuario != null ? usuario.getEmail() : null)
                 .build();
-    }
-
-    public static PessoaResponseDTO toResponseDTO(Pessoa pessoa, Usuario usuario) {
-        return toResponseDTO(pessoa, usuario != null ? usuario.getEmail() : null);
     }
 }
