@@ -1,7 +1,7 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.RegisterRequest;
-import com.fixhub.FixHub.model.dto.RegisterResponse;
+import com.fixhub.FixHub.model.dto.RegisterRequestDTO;
+import com.fixhub.FixHub.model.dto.RegisterResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Usuario;
 import com.fixhub.FixHub.model.enums.Cargo;
@@ -88,7 +88,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request,
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request,
                                       BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
@@ -100,7 +100,7 @@ public class AuthController {
         }
 
         try {
-            RegisterResponse response = authService.register(request);
+            RegisterResponseDTO response = authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

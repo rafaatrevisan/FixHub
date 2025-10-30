@@ -7,7 +7,7 @@ import javax.validation.constraints.*;
 import java.time.LocalDate;
 
 @Data
-public class RegisterRequest {
+public class RegisterRequestDTO {
 
     @NotBlank(message = "Nome é obrigatório")
     @Size(max = 255, message = "Nome deve ter no máximo 255 caracteres")

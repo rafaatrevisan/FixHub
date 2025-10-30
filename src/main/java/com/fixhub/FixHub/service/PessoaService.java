@@ -1,7 +1,9 @@
 package com.fixhub.FixHub.service;
 
 import com.fixhub.FixHub.exception.BusinessException;
+import com.fixhub.FixHub.model.dto.UsuarioLogadoResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
+import com.fixhub.FixHub.model.entity.Usuario;
 import com.fixhub.FixHub.model.enums.Cargo;
 import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.util.AuthUtil;
@@ -141,4 +143,17 @@ public class PessoaService {
             pessoa.setCargo(Cargo.CLIENTE);
         }
     }
+
+    public UsuarioLogadoResponseDTO getUsuarioLogadoInfo() {
+        Usuario usuario = authUtil.getUsuarioLogado();
+        Pessoa pessoa = usuario.getPessoa();
+
+        return UsuarioLogadoResponseDTO.builder()
+                .email(usuario.getEmail())
+                .nome(pessoa.getNome())
+                .dataNascimento(pessoa.getDataNascimento())
+                .telefone(pessoa.getTelefone())
+                .build();
+    }
+
 }
