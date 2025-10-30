@@ -83,7 +83,7 @@ public class FuncionarioService {
         if (dto.getCargo() == Cargo.GERENTE && usuarioLogado.getCargo() != Cargo.GERENTE) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não permitido cadastrar funcionário com cargo GERENTE");
         }
-        validarDadosFuncionario(dto);
+        validarCadastroFuncionario(dto);
         Pessoa novoFuncionario = Pessoa.builder()
                 .nome(dto.getNome())
                 .dataNascimento(dto.getDataNascimento())
@@ -107,7 +107,7 @@ public class FuncionarioService {
         if (usuarioLogado.getCargo() == Cargo.SUPORTE && funcionario.getCargo() == Cargo.GERENTE) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode alterar dados de um GERENTE");
         }
-        validarDadosFuncionario(dto);
+        validarEdicaoFuncionario(dto);
         funcionario.setNome(dto.getNome());
         funcionario.setDataNascimento(dto.getDataNascimento());
         funcionario.setTelefone(dto.getTelefone());
@@ -185,7 +185,7 @@ public class FuncionarioService {
         usuarioRepository.save(usuario);
     }
 
-    private void validarDadosFuncionario(FuncionarioRequestDTO dto) {
+    private void validarCadastroFuncionario(FuncionarioRequestDTO dto) {
         if (dto.getNome() == null || dto.getNome().isBlank()) {
             throw new BusinessException("O campo nome é obrigatório");
         }
@@ -211,4 +211,20 @@ public class FuncionarioService {
             throw new BusinessException("O cargo do funcionário é inválido");
         }
     }
+
+    private void validarEdicaoFuncionario(FuncionarioRequestDTO dto) {
+        if (dto.getNome() != null && dto.getNome().isBlank()) {
+            throw new BusinessException("O campo nome não pode estar vazio");
+        }
+        if (dto.getTelefone() != null && !Pattern.matches("^\\d{10,11}$", dto.getTelefone())) {
+            throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
+        }
+        if (dto.getDataNascimento() != null && dto.getDataNascimento().isAfter(LocalDate.now())) {
+            throw new BusinessException("A data de nascimento deve estar no passado");
+        }
+        if (dto.getCargo() != null && dto.getCargo() == Cargo.CLIENTE) {
+            throw new BusinessException("O cargo do funcionário é inválido");
+        }
+    }
+
 }

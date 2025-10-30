@@ -17,6 +17,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -31,6 +32,9 @@ public class UsuarioService {
     private final AuthUtil authUtil;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Lista usuários clientes com filtros
+     */
     public List<PessoaResponseDTO> listarUsuariosComFiltros(
             String nome,
             String email,
@@ -77,6 +81,9 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Edita dados do usuário cliente
+     */
     public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email, String senha) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -95,14 +102,11 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível editar um usuário inativo");
         }
 
+        validarEdicaoUsuario(usuarioAtualizado);
+
         if (usuarioAtualizado.getNome() != null) usuario.setNome(usuarioAtualizado.getNome());
         if (usuarioAtualizado.getDataNascimento() != null) usuario.setDataNascimento(usuarioAtualizado.getDataNascimento());
-        if (usuarioAtualizado.getTelefone() != null) {
-            if (!Pattern.matches("^\\d{10,11}$", usuarioAtualizado.getTelefone())) {
-                throw new BusinessException("Telefone inválido");
-            }
-            usuario.setTelefone(usuarioAtualizado.getTelefone());
-        }
+        if (usuarioAtualizado.getTelefone() != null) usuario.setTelefone(usuarioAtualizado.getTelefone());
 
         usuario.setDataAlteracao(LocalDateTime.now());
         usuario.setUsuarioAlterador(authUtil.getIdPessoaUsuarioLogado());
@@ -122,6 +126,9 @@ public class UsuarioService {
         return PessoaMapper.toResponseDTO(usuario, usuarioEntity);
     }
 
+    /**
+     * Desativa um usuário cliente
+     */
     public void desativarUsuario(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -151,6 +158,9 @@ public class UsuarioService {
         usuarioRepository.save(usuarioEntity);
     }
 
+    /**
+     * Reativa um usuário cliente
+     */
     public void reativarUsuario(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -178,5 +188,19 @@ public class UsuarioService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Registro na tabela usuario não encontrado"));
         usuarioEntity.setAtivo(true);
         usuarioRepository.save(usuarioEntity);
+    }
+
+    private void validarEdicaoUsuario(Pessoa usuarioAtualizado) {
+        if (usuarioAtualizado.getNome() != null && usuarioAtualizado.getNome().isBlank()) {
+            throw new BusinessException("O campo nome não pode estar vazio");
+        }
+        if (usuarioAtualizado.getTelefone() != null &&
+                !Pattern.matches("^\\d{10,11}$", usuarioAtualizado.getTelefone())) {
+            throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
+        }
+        if (usuarioAtualizado.getDataNascimento() != null &&
+                usuarioAtualizado.getDataNascimento().isAfter(LocalDate.now())) {
+            throw new BusinessException("A data de nascimento deve estar no passado");
+        }
     }
 }
