@@ -24,11 +24,14 @@ public class FuncionarioController {
     public ResponseEntity<List<PessoaResponseDTO>> listarComFiltros(
             @RequestParam(required = false) String nome,
             @RequestParam(required = false) Cargo cargo,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String telefone,
+            @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicioCadastro,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFimCadastro
     ) {
         List<PessoaResponseDTO> lista = funcionarioService.listarFuncionariosComFiltros(
-                nome, cargo, dataInicioCadastro, dataFimCadastro
+                nome, cargo, email, telefone, ativo, dataInicioCadastro, dataFimCadastro
         );
         return ResponseEntity.ok(lista);
     }

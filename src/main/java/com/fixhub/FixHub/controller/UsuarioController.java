@@ -24,23 +24,16 @@ public class UsuarioController {
     @GetMapping("/filtro")
     public ResponseEntity<List<PessoaResponseDTO>> listarComFiltros(
             @RequestParam(required = false) String nome,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String telefone,
+            @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicioCadastro,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFimCadastro
     ) {
         List<PessoaResponseDTO> lista = usuarioService.listarUsuariosComFiltros(
-                nome, dataInicioCadastro, dataFimCadastro
+                nome, email, telefone, ativo, dataInicioCadastro, dataFimCadastro
         );
         return ResponseEntity.ok(lista);
-    }
-
-    @PutMapping("{id}")
-    public ResponseEntity<PessoaResponseDTO> editar(
-            @PathVariable Integer id,
-            @RequestBody PessoaRequestDTO dto
-    ) {
-        Pessoa entityAtualizada = PessoaMapper.toEntity(dto);
-        PessoaResponseDTO editado = usuarioService.editarUsuario(id, entityAtualizada);
-        return ResponseEntity.ok(editado);
     }
 
     @PatchMapping("{id}/desativar")

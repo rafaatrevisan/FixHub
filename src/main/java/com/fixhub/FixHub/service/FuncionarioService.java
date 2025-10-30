@@ -33,23 +33,22 @@ public class FuncionarioService {
     private final AuthUtil authUtil;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Listar funcionários com filtros usando Specification
-     */
     public List<PessoaResponseDTO> listarFuncionariosComFiltros(
             String nome,
             Cargo cargo,
+            String email,
+            String telefone,
+            Boolean ativo,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicioCadastro,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFimCadastro
     ) {
-        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
-
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem acessar esta funcionalidade");
         }
 
-        Specification<Pessoa> spec = Specification.<Pessoa>where((root, query, cb) -> cb.notEqual(root.get("cargo"), Cargo.CLIENTE))
-                .and((root, query, cb) -> cb.isTrue(root.get("ativo")));
+        Specification<Pessoa> spec = Specification.<Pessoa>where(
+                (root, query, cb) -> cb.notEqual(root.get("cargo"), Cargo.CLIENTE)
+        );
 
         if (nome != null && !nome.isBlank()) {
             spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
@@ -57,6 +56,18 @@ public class FuncionarioService {
 
         if (cargo != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("cargo"), cargo));
+        }
+
+        if (email != null && !email.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.join("usuario").get("email")), "%" + email.toLowerCase() + "%"));
+        }
+
+        if (telefone != null && !telefone.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.like(root.get("telefone"), "%" + telefone + "%"));
+        }
+
+        if (ativo != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("ativo"), ativo));
         }
 
         if (dataInicioCadastro != null && dataFimCadastro != null) {
@@ -68,25 +79,21 @@ public class FuncionarioService {
         }
 
         List<Pessoa> lista = pessoaRepository.findAll(spec);
-
-        return lista.stream()
-                .map(pessoa -> {
-                    Usuario usuario = usuarioRepository.findByPessoaId(pessoa.getId()).orElse(null);
-                    return PessoaMapper.toResponseDTO(pessoa, usuario);
-                })
-                .collect(Collectors.toList());
+        return lista.stream().map(PessoaMapper::toResponseDTO).collect(Collectors.toList());
     }
 
     public PessoaResponseDTO cadastrarFuncionario(FuncionarioRequestDTO dto) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!authUtil.usuarioTemCargo(Cargo.GERENTE.name())) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Somente GERENTE pode cadastrar funcionários");
         }
 
-        validarDadosFuncionario(dto);
-
-        if (usuarioRepository.findByEmail(dto.getEmail()).isPresent()) {
-            throw new BusinessException("Email já está em uso");
+        if (dto.getCargo() == Cargo.GERENTE && usuarioLogado.getCargo() != Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Não permitido cadastrar funcionário com cargo GERENTE");
         }
+
+        validarDadosFuncionario(dto);
 
         Pessoa novoFuncionario = Pessoa.builder()
                 .nome(dto.getNome())
@@ -98,11 +105,7 @@ public class FuncionarioService {
 
         pessoaRepository.save(novoFuncionario);
 
-        Usuario usuario = new Usuario(
-                novoFuncionario,
-                dto.getEmail(),
-                passwordEncoder.encode(dto.getSenha())
-        );
+        Usuario usuario = new Usuario(novoFuncionario, dto.getEmail(), dto.getSenha());
         usuario.setAtivo(true);
         usuarioRepository.save(usuario);
 
@@ -110,14 +113,20 @@ public class FuncionarioService {
     }
 
     public PessoaResponseDTO editarFuncionario(Integer id, FuncionarioRequestDTO dto) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem editar funcionários");
         }
 
-        validarDadosFuncionario(dto);
-
         Pessoa funcionario = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+
+        if (usuarioLogado.getCargo() == Cargo.SUPORTE && funcionario.getCargo() == Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode alterar dados de um GERENTE");
+        }
+
+        validarDadosFuncionario(dto);
 
         funcionario.setNome(dto.getNome());
         funcionario.setDataNascimento(dto.getDataNascimento());
@@ -129,28 +138,26 @@ public class FuncionarioService {
 
         Usuario usuario = usuarioRepository.findByPessoaId(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário do funcionário não encontrado"));
-
-        usuarioRepository.findByEmail(dto.getEmail())
-                .ifPresent(u -> {
-                    if (!u.getId().equals(usuario.getId())) {
-                        throw new BusinessException("Email já está em uso por outro usuário");
-                    }
-                });
-
         usuario.setEmail(dto.getEmail());
-        usuario.setSenha(passwordEncoder.encode(dto.getSenha())); // Criptografar aqui também
+        usuario.setSenha(dto.getSenha());
         usuarioRepository.save(usuario);
 
         return PessoaMapper.toResponseDTO(funcionario);
     }
 
     public void desativarFuncionario(Integer id) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem desativar funcionários");
         }
 
         Pessoa funcionario = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+
+        if (usuarioLogado.getCargo() == Cargo.SUPORTE && funcionario.getCargo() == Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode desativar um GERENTE");
+        }
 
         if (!funcionario.getAtivo()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Funcionário já está inativo");
@@ -168,12 +175,18 @@ public class FuncionarioService {
     }
 
     public void reativarFuncionario(Integer id) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem reativar funcionários");
         }
 
         Pessoa funcionario = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Funcionário não encontrado"));
+
+        if (usuarioLogado.getCargo() == Cargo.SUPORTE && funcionario.getCargo() == Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode reativar um GERENTE");
+        }
 
         if (funcionario.getAtivo()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Funcionário já está ativo");

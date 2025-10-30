@@ -31,6 +31,9 @@ public class UsuarioService {
 
     public List<PessoaResponseDTO> listarUsuariosComFiltros(
             String nome,
+            String email,
+            String telefone,
+            Boolean ativo,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataInicioCadastro,
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime dataFimCadastro
     ) {
@@ -40,35 +43,49 @@ public class UsuarioService {
 
         Specification<Pessoa> spec = Specification.<Pessoa>where(
                 (root, query, cb) -> cb.equal(root.get("cargo"), Cargo.CLIENTE)
-        ).and((root, query, cb) -> cb.isTrue(root.get("ativo")));
+        );
 
         if (nome != null && !nome.isBlank()) {
             spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
         }
 
+        if (email != null && !email.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.join("usuario").get("email")), "%" + email.toLowerCase() + "%"));
+        }
+
+        if (telefone != null && !telefone.isBlank()) {
+            spec = spec.and((root, query, cb) -> cb.like(root.get("telefone"), "%" + telefone + "%"));
+        }
+
+        if (ativo != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("ativo"), ativo));
+        }
+
         if (dataInicioCadastro != null && dataFimCadastro != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.between(root.get("dataCadastro"), dataInicioCadastro, dataFimCadastro));
+            spec = spec.and((root, query, cb) -> cb.between(root.get("dataCadastro"), dataInicioCadastro, dataFimCadastro));
         } else if (dataInicioCadastro != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.greaterThanOrEqualTo(root.get("dataCadastro"), dataInicioCadastro));
+            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("dataCadastro"), dataInicioCadastro));
         } else if (dataFimCadastro != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.lessThanOrEqualTo(root.get("dataCadastro"), dataFimCadastro));
+            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("dataCadastro"), dataFimCadastro));
         }
 
         List<Pessoa> lista = pessoaRepository.findAll(spec);
-
         return lista.stream().map(PessoaMapper::toResponseDTO).collect(Collectors.toList());
     }
 
     public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem editar usuários");
         }
 
         Pessoa usuario = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        if (usuarioLogado.getCargo() == Cargo.SUPORTE && usuario.getCargo() == Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode alterar dados de um GERENTE");
+        }
 
         if (!usuario.getAtivo()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível editar um usuário inativo");
@@ -91,12 +108,18 @@ public class UsuarioService {
     }
 
     public void desativarUsuario(Integer id) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem desativar usuários");
         }
 
         Pessoa usuario = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        if (usuarioLogado.getCargo() == Cargo.SUPORTE && usuario.getCargo() == Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode desativar um GERENTE");
+        }
 
         if (!usuario.getAtivo()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário já está inativo");
@@ -114,12 +137,18 @@ public class UsuarioService {
     }
 
     public void reativarUsuario(Integer id) {
+        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem reativar usuários");
         }
 
         Pessoa usuario = pessoaRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+
+        if (usuarioLogado.getCargo() == Cargo.SUPORTE && usuario.getCargo() == Cargo.GERENTE) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "SUPORTE não pode reativar um GERENTE");
+        }
 
         if (usuario.getAtivo()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Usuário já está ativo");
