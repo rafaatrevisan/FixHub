@@ -1,9 +1,6 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.PessoaRequestDTO;
 import com.fixhub.FixHub.model.dto.PessoaResponseDTO;
-import com.fixhub.FixHub.model.entity.Pessoa;
-import com.fixhub.FixHub.model.mapper.PessoaMapper;
 import com.fixhub.FixHub.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;

@@ -44,7 +44,7 @@ public class PessoaController {
         return ResponseEntity.ok(PessoaMapper.toResponseDTO(atualizada));
     }
 
-    @PatchMapping("{id}/desativar")
+    @PatchMapping("desativar/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void desativar(@PathVariable Integer id) {
         pessoaService.desativarPessoa(id);
