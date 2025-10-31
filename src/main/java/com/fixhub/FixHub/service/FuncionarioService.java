@@ -46,29 +46,50 @@ public class FuncionarioService {
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem acessar esta funcionalidade");
         }
+
         Specification<Pessoa> spec = Specification.<Pessoa>where(
                 (root, query, cb) -> cb.notEqual(root.get("cargo"), Cargo.CLIENTE)
         );
+
         if (nome != null && !nome.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
         }
+
         if (cargo != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("cargo"), cargo));
         }
+
         if (telefone != null && !telefone.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(root.get("telefone"), "%" + telefone + "%"));
+            spec = spec.and((root, query, cb) ->
+                    cb.like(root.get("telefone"), "%" + telefone + "%"));
         }
+
         if (ativo != null) {
             spec = spec.and((root, query, cb) -> cb.equal(root.get("ativo"), ativo));
         }
+
         if (dataInicioCadastro != null && dataFimCadastro != null) {
-            spec = spec.and((root, query, cb) -> cb.between(root.get("dataCadastro"), dataInicioCadastro, dataFimCadastro));
+            spec = spec.and((root, query, cb) ->
+                    cb.between(root.get("dataCadastro"), dataInicioCadastro, dataFimCadastro));
         } else if (dataInicioCadastro != null) {
-            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("dataCadastro"), dataInicioCadastro));
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("dataCadastro"), dataInicioCadastro));
         } else if (dataFimCadastro != null) {
-            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("dataCadastro"), dataFimCadastro));
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("dataCadastro"), dataFimCadastro));
         }
+
         List<Pessoa> lista = pessoaRepository.findAll(spec);
+
+        if (email != null && !email.isBlank()) {
+            lista = lista.stream()
+                    .filter(p -> usuarioRepository.findByPessoaId(p.getId())
+                            .map(u -> u.getEmail().toLowerCase().contains(email.toLowerCase()))
+                            .orElse(false))
+                    .collect(Collectors.toList());
+        }
+
         return lista.stream()
                 .map(pessoa -> {
                     Usuario usuario = usuarioRepository.findByPessoaId(pessoa.getId()).orElse(null);
@@ -210,6 +231,9 @@ public class FuncionarioService {
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new BusinessException("O campo email é obrigatório");
         }
+        if (!ValidationUtil.isEmailValido(dto.getEmail())) {
+            throw new BusinessException("O campo email é inválido. Informe um endereço de e‑mail válido.");
+        }
         if (dto.getSenha() == null || dto.getSenha().isBlank()) {
             throw new BusinessException("O campo senha é obrigatório");
         }
@@ -230,6 +254,12 @@ public class FuncionarioService {
         }
         if (dto.getDataNascimento() != null && dto.getDataNascimento().isAfter(LocalDate.now())) {
             throw new BusinessException("A data de nascimento deve estar no passado");
+        }
+        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
+            throw new BusinessException("O campo email é obrigatório");
+        }
+        if (!ValidationUtil.isEmailValido(dto.getEmail())) {
+            throw new BusinessException("O campo email é inválido. Informe um endereço de e‑mail válido.");
         }
         if (dto.getCargo() != null && dto.getCargo() == Cargo.CLIENTE) {
             throw new BusinessException("O cargo do funcionário é inválido");

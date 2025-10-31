@@ -53,11 +53,13 @@ public class UsuarioService {
         );
 
         if (nome != null && !nome.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
+            spec = spec.and((root, query, cb) ->
+                    cb.like(cb.lower(root.get("nome")), "%" + nome.toLowerCase() + "%"));
         }
 
         if (telefone != null && !telefone.isBlank()) {
-            spec = spec.and((root, query, cb) -> cb.like(root.get("telefone"), "%" + telefone + "%"));
+            spec = spec.and((root, query, cb) ->
+                    cb.like(root.get("telefone"), "%" + telefone + "%"));
         }
 
         if (ativo != null) {
@@ -65,14 +67,25 @@ public class UsuarioService {
         }
 
         if (dataInicioCadastro != null && dataFimCadastro != null) {
-            spec = spec.and((root, query, cb) -> cb.between(root.get("dataCadastro"), dataInicioCadastro, dataFimCadastro));
+            spec = spec.and((root, query, cb) ->
+                    cb.between(root.get("dataCadastro"), dataInicioCadastro, dataFimCadastro));
         } else if (dataInicioCadastro != null) {
-            spec = spec.and((root, query, cb) -> cb.greaterThanOrEqualTo(root.get("dataCadastro"), dataInicioCadastro));
+            spec = spec.and((root, query, cb) ->
+                    cb.greaterThanOrEqualTo(root.get("dataCadastro"), dataInicioCadastro));
         } else if (dataFimCadastro != null) {
-            spec = spec.and((root, query, cb) -> cb.lessThanOrEqualTo(root.get("dataCadastro"), dataFimCadastro));
+            spec = spec.and((root, query, cb) ->
+                    cb.lessThanOrEqualTo(root.get("dataCadastro"), dataFimCadastro));
         }
 
         List<Pessoa> lista = pessoaRepository.findAll(spec);
+
+        if (email != null && !email.isBlank()) {
+            lista = lista.stream()
+                    .filter(p -> usuarioRepository.findByPessoaId(p.getId())
+                            .map(u -> u.getEmail().toLowerCase().contains(email.toLowerCase()))
+                            .orElse(false))
+                    .collect(Collectors.toList());
+        }
 
         return lista.stream()
                 .map(pessoa -> {
@@ -85,7 +98,7 @@ public class UsuarioService {
     /**
      * Edita dados do usuário cliente
      */
-    public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email, String senha) {
+    public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
@@ -103,7 +116,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível editar um usuário inativo");
         }
 
-        validarEdicaoUsuario(usuarioAtualizado);
+        validarEdicaoUsuario(usuarioAtualizado, email);
 
         if (usuarioAtualizado.getNome() != null) usuario.setNome(usuarioAtualizado.getNome());
         if (usuarioAtualizado.getDataNascimento() != null) usuario.setDataNascimento(usuarioAtualizado.getDataNascimento());
@@ -118,9 +131,6 @@ public class UsuarioService {
 
         if (email != null && !email.isBlank()) {
             usuarioEntity.setEmail(email);
-        }
-        if (senha != null && !senha.isBlank()) {
-            usuarioEntity.setSenha(passwordEncoder.encode(senha));
         }
         usuarioRepository.save(usuarioEntity);
 
@@ -191,7 +201,7 @@ public class UsuarioService {
         usuarioRepository.save(usuarioEntity);
     }
 
-    private void validarEdicaoUsuario(Pessoa usuarioAtualizado) {
+    private void validarEdicaoUsuario(Pessoa usuarioAtualizado, String email) {
         if (usuarioAtualizado.getNome() != null && usuarioAtualizado.getNome().isBlank()) {
             throw new BusinessException("O campo nome não pode estar vazio");
         }
@@ -201,6 +211,12 @@ public class UsuarioService {
         if (usuarioAtualizado.getDataNascimento() != null &&
                 usuarioAtualizado.getDataNascimento().isAfter(LocalDate.now())) {
             throw new BusinessException("A data de nascimento deve estar no passado");
+        }
+        if (email == null || email.isBlank()) {
+            throw new BusinessException("O campo email é obrigatório");
+        }
+        if (!ValidationUtil.isEmailValido(email)) {
+            throw new BusinessException("O campo email é inválido. Informe um endereço de e‑mail válido.");
         }
     }
 }
