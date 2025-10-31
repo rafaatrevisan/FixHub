@@ -50,23 +50,21 @@ public class ResolucaoTicketService {
         ticketMestreRepository.save(mestre);
 
         List<Ticket> ticketsVinculados = ticketRepository.findByTicketMestreId(mestre.getId());
-        ResolucaoTicket ultimaResolucao = null;
-
         for (Ticket t : ticketsVinculados) {
             t.setStatus(StatusTicket.EM_ANDAMENTO);
             t.setDataAtualizacao(LocalDateTime.now());
             ticketRepository.save(t);
-
-            ResolucaoTicket resolucao = ResolucaoTicket.builder()
-                    .ticket(mestre)
-                    .funcionario(funcionarioLogado)
-                    .descricao("")
-                    .build();
-
-            ultimaResolucao = resolucaoTicketRepository.save(resolucao);
         }
-        return ultimaResolucao;
+
+        ResolucaoTicket resolucao = ResolucaoTicket.builder()
+                .ticket(mestre)
+                .funcionario(funcionarioLogado)
+                .descricao("")
+                .build();
+
+        return resolucaoTicketRepository.save(resolucao);
     }
+
 
     /**
      * Renunciar um TicketMestre e voltar para PENDENTE.

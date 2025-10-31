@@ -50,12 +50,6 @@ public class PessoaController {
         pessoaService.desativarPessoa(id);
     }
 
-    @PatchMapping("{id}/reativar")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reativar(@PathVariable Integer id) {
-        pessoaService.reativarPessoa(id);
-    }
-
     @GetMapping("/me")
     public ResponseEntity<UsuarioLogadoResponseDTO> getUsuarioLogado() {
         return ResponseEntity.ok(pessoaService.getUsuarioLogadoInfo());

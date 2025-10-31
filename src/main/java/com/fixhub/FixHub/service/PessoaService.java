@@ -93,23 +93,6 @@ public class PessoaService {
         pessoaRepository.save(pessoa);
     }
 
-    public void reativarPessoa(Integer id) {
-        // Obtém o usuário logado automaticamente
-        Pessoa usuarioAlterador = authUtil.getPessoaUsuarioLogado();
-
-        if (!(usuarioAlterador.getCargo() == Cargo.GERENTE || usuarioAlterador.getCargo() == Cargo.SUPORTE)) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário sem permissão para reativação.");
-        }
-
-        Pessoa pessoa = pessoaRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pessoa não encontrada"));
-
-        pessoa.setAtivo(true);
-        pessoa.setDataAlteracao(LocalDateTime.now());
-        pessoa.setUsuarioAlterador(usuarioAlterador.getId());
-        pessoaRepository.save(pessoa);
-    }
-
     public void validarPessoa(Pessoa pessoa) {
         if (pessoa.getNome() == null || pessoa.getNome().isBlank()) {
             throw new BusinessException("O campo nome é obrigatório");
