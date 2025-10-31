@@ -7,6 +7,7 @@ import com.fixhub.FixHub.model.entity.Usuario;
 import com.fixhub.FixHub.model.enums.Cargo;
 import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.util.AuthUtil;
+import com.fixhub.FixHub.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -100,7 +101,7 @@ public class PessoaService {
         if (pessoa.getTelefone() == null || pessoa.getTelefone().isBlank()) {
             throw new BusinessException("O campo telefone é obrigatório");
         }
-        if (!isTelefoneValido(pessoa.getTelefone())) {
+        if (!ValidationUtil.isTelefoneValido(pessoa.getTelefone())) {
             throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
         }
         if (pessoa.getDataNascimento() == null) {
@@ -113,12 +114,6 @@ public class PessoaService {
         if (idade < 16) {
             throw new BusinessException("A pessoa deve ter pelo menos 16 anos");
         }
-    }
-
-    private boolean isTelefoneValido(String telefone) {
-        String regex = "^\\d{10,11}$";
-        Pattern pattern = Pattern.compile(regex);
-        return pattern.matcher(telefone).matches();
     }
 
     private void atribuirCargoAutomatico(Pessoa pessoa) {

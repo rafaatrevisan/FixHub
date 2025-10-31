@@ -9,6 +9,7 @@ import com.fixhub.FixHub.model.mapper.PessoaMapper;
 import com.fixhub.FixHub.model.repository.PessoaRepository;
 import com.fixhub.FixHub.model.repository.UsuarioRepository;
 import com.fixhub.FixHub.util.AuthUtil;
+import com.fixhub.FixHub.util.ValidationUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -194,8 +195,7 @@ public class UsuarioService {
         if (usuarioAtualizado.getNome() != null && usuarioAtualizado.getNome().isBlank()) {
             throw new BusinessException("O campo nome não pode estar vazio");
         }
-        if (usuarioAtualizado.getTelefone() != null &&
-                !Pattern.matches("^\\d{10,11}$", usuarioAtualizado.getTelefone())) {
+        if (usuarioAtualizado.getTelefone() != null && !ValidationUtil.isTelefoneValido(usuarioAtualizado.getTelefone())) {
             throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
         }
         if (usuarioAtualizado.getDataNascimento() != null &&
