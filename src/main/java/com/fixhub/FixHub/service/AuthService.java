@@ -14,6 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Period;
+
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -21,7 +24,6 @@ public class AuthService {
     private final PessoaRepository pessoaRepository;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
-    public final ValidationUtil validationUtil;
 
     @Transactional
     public RegisterResponseDTO register(RegisterRequestDTO request) {
@@ -36,7 +38,7 @@ public class AuthService {
                 .cargo(Cargo.CLIENTE)
                 .build();
 
-        validationUtil.validarPessoa(pessoa, request.getSenha());
+        this.validarPessoa(pessoa, request.getSenha());
 
         pessoa = pessoaRepository.save(pessoa);
 
@@ -53,5 +55,34 @@ public class AuthService {
                 usuario.getId(),
                 usuario.getEmail()
         );
+    }
+
+
+    public void validarPessoa(Pessoa pessoa, String senha) {
+        if (pessoa.getNome() == null || pessoa.getNome().isBlank()) {
+            throw new BusinessException("O campo nome é obrigatório");
+        }
+        if (pessoa.getTelefone() == null || pessoa.getTelefone().isBlank()) {
+            throw new BusinessException("O campo telefone é obrigatório");
+        }
+        if (!ValidationUtil.isTelefoneValido(pessoa.getTelefone())) {
+            throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
+        }
+        if (pessoa.getDataNascimento() == null) {
+            throw new BusinessException("A data de nascimento é obrigatória");
+        }
+        if (pessoa.getDataNascimento().isAfter(LocalDate.now())) {
+            throw new BusinessException("A data de nascimento deve estar no passado");
+        }
+        int idade = Period.between(pessoa.getDataNascimento(), LocalDate.now()).getYears();
+        if (idade < 16) {
+            throw new BusinessException("A pessoa deve ter pelo menos 16 anos");
+        }
+        if (senha == null || senha.isBlank()) {
+            throw new BusinessException("O campo senha é obrigatório");
+        }
+        if (senha.length() < 6) {
+            throw new BusinessException("A senha deve conter no mínimo 6 caracteres");
+        }
     }
 }
