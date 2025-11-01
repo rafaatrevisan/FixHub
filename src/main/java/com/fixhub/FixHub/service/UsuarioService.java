@@ -20,6 +20,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -211,6 +212,12 @@ public class UsuarioService {
         if (usuarioAtualizado.getDataNascimento() != null &&
                 usuarioAtualizado.getDataNascimento().isAfter(LocalDate.now())) {
             throw new BusinessException("A data de nascimento deve estar no passado");
+        }
+        if (usuarioAtualizado.getDataNascimento() != null) {
+            int idade = Period.between(usuarioAtualizado.getDataNascimento(), LocalDate.now()).getYears();
+            if (idade < 16) {
+                throw new BusinessException("O usuário deve ter pelo menos 16 anos");
+            }
         }
         if (email == null || email.isBlank()) {
             throw new BusinessException("O campo email é obrigatório");

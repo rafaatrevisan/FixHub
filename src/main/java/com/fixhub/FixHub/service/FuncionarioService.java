@@ -21,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -219,14 +220,15 @@ public class FuncionarioService {
         if (!ValidationUtil.isTelefoneValido(dto.getTelefone())) {
             throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
         }
-        if (!Pattern.matches("^\\d{10,11}$", dto.getTelefone())) {
-            throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
-        }
         if (dto.getDataNascimento() == null) {
             throw new BusinessException("A data de nascimento é obrigatória");
         }
         if (dto.getDataNascimento().isAfter(LocalDate.now())) {
             throw new BusinessException("A data de nascimento deve estar no passado");
+        }
+        int idade = Period.between(dto.getDataNascimento(), LocalDate.now()).getYears();
+        if (idade < 16) {
+            throw new BusinessException("O funcionário deve ter pelo menos 16 anos");
         }
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new BusinessException("O campo email é obrigatório");
@@ -237,6 +239,9 @@ public class FuncionarioService {
         if (dto.getSenha() == null || dto.getSenha().isBlank()) {
             throw new BusinessException("O campo senha é obrigatório");
         }
+        if (dto.getSenha().length() < 6) {
+            throw new BusinessException("A senha deve conter no mínimo 6 caracteres");
+        }
         if (dto.getCargo() == null || dto.getCargo() == Cargo.CLIENTE) {
             throw new BusinessException("O cargo do funcionário é inválido");
         }
@@ -246,19 +251,19 @@ public class FuncionarioService {
         if (dto.getNome() != null && dto.getNome().isBlank()) {
             throw new BusinessException("O campo nome não pode estar vazio");
         }
-        if (dto.getTelefone() != null && !Pattern.matches("^\\d{10,11}$", dto.getTelefone())) {
-            throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
-        }
-        if (!ValidationUtil.isTelefoneValido(dto.getTelefone())) {
+        if (dto.getTelefone() != null && !ValidationUtil.isTelefoneValido(dto.getTelefone())) {
             throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
         }
         if (dto.getDataNascimento() != null && dto.getDataNascimento().isAfter(LocalDate.now())) {
             throw new BusinessException("A data de nascimento deve estar no passado");
         }
-        if (dto.getEmail() == null || dto.getEmail().isBlank()) {
-            throw new BusinessException("O campo email é obrigatório");
+        if (dto.getDataNascimento() != null) {
+            int idade = Period.between(dto.getDataNascimento(), LocalDate.now()).getYears();
+            if (idade < 16) {
+                throw new BusinessException("O funcionário deve ter pelo menos 16 anos");
+            }
         }
-        if (!ValidationUtil.isEmailValido(dto.getEmail())) {
+        if (dto.getEmail() != null && !ValidationUtil.isEmailValido(dto.getEmail())) {
             throw new BusinessException("O campo email é inválido. Informe um endereço de e‑mail válido.");
         }
         if (dto.getCargo() != null && dto.getCargo() == Cargo.CLIENTE) {
