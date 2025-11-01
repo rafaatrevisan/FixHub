@@ -1,7 +1,7 @@
 package com.fixhub.FixHub.service;
 
-import com.fixhub.FixHub.model.dto.RegisterRequest;
-import com.fixhub.FixHub.model.dto.RegisterResponse;
+import com.fixhub.FixHub.model.dto.RegisterRequestDTO;
+import com.fixhub.FixHub.model.dto.RegisterResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.entity.Usuario;
 import com.fixhub.FixHub.model.enums.Cargo;
@@ -21,7 +21,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
 
     @Transactional
-    public RegisterResponse register(RegisterRequest request) {
+    public RegisterResponseDTO register(RegisterRequestDTO request) {
         if (usuarioRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new RuntimeException("Email já está em uso");
         }
@@ -43,7 +43,7 @@ public class AuthService {
 
         usuario = usuarioRepository.save(usuario);
 
-        return new RegisterResponse(
+        return new RegisterResponseDTO(
                 "Usuário registrado com sucesso",
                 usuario.getId(),
                 usuario.getEmail()

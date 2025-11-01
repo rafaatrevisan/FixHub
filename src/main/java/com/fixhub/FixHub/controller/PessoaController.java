@@ -2,6 +2,7 @@ package com.fixhub.FixHub.controller;
 
 import com.fixhub.FixHub.model.dto.PessoaRequestDTO;
 import com.fixhub.FixHub.model.dto.PessoaResponseDTO;
+import com.fixhub.FixHub.model.dto.UsuarioLogadoResponseDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.model.mapper.PessoaMapper;
 import com.fixhub.FixHub.service.PessoaService;
@@ -43,15 +44,15 @@ public class PessoaController {
         return ResponseEntity.ok(PessoaMapper.toResponseDTO(atualizada));
     }
 
-    @PatchMapping("{id}/desativar")
+    @PatchMapping("desativar/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void desativar(@PathVariable Integer id) {
         pessoaService.desativarPessoa(id);
     }
 
-    @PatchMapping("{id}/reativar")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reativar(@PathVariable Integer id) {
-        pessoaService.reativarPessoa(id);
+    @GetMapping("/me")
+    public ResponseEntity<UsuarioLogadoResponseDTO> getUsuarioLogado() {
+        return ResponseEntity.ok(pessoaService.getUsuarioLogadoInfo());
     }
+
 }

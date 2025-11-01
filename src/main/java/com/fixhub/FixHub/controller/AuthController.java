@@ -1,7 +1,11 @@
 package com.fixhub.FixHub.controller;
 
-import com.fixhub.FixHub.model.dto.RegisterRequest;
-import com.fixhub.FixHub.model.dto.RegisterResponse;
+import com.fixhub.FixHub.model.dto.RegisterRequestDTO;
+import com.fixhub.FixHub.model.dto.RegisterResponseDTO;
+import com.fixhub.FixHub.model.entity.Pessoa;
+import com.fixhub.FixHub.model.entity.Usuario;
+import com.fixhub.FixHub.model.enums.Cargo;
+import com.fixhub.FixHub.model.repository.UsuarioRepository;
 import com.fixhub.FixHub.security.JwtUtil;
 import com.fixhub.FixHub.service.AuthService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +30,7 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtUtil jwtUtil;
     private final AuthService authService;
+    private final UsuarioRepository usuarioRepository;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestParam String email, @RequestParam String senha) {
@@ -48,8 +53,42 @@ public class AuthController {
         }
     }
 
+    @PostMapping("/admin/login")
+    public ResponseEntity<?> adminLogin(@RequestParam String email, @RequestParam String senha) {
+        try {
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, senha)
+            );
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuário não encontrado"));
+            Pessoa pessoa = usuario.getPessoa();
+            Cargo cargo = pessoa.getCargo();
+            if (cargo != Cargo.GERENTE && cargo != Cargo.SUPORTE) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Acesso negado. Apenas GERENTES e SUPORTE podem acessar o painel administrativo.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+            // Gera token para admin
+            String token = jwtUtil.generateToken(email);
+
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("message", "Login administrativo realizado com sucesso");
+            response.put("cargo", cargo.toString());
+            response.put("nome", pessoa.getNome());
+            response.put("isAdmin", true);
+
+            return ResponseEntity.ok(response);
+
+        } catch (AuthenticationException e) {
+            Map<String, String> error = new HashMap<>();
+            error.put("error", "Credenciais inválidas");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+        }
+    }
+
     @PostMapping("/register")
-    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request,
+    public ResponseEntity<?> register(@Valid @RequestBody RegisterRequestDTO request,
                                       BindingResult bindingResult) {
 
         if (bindingResult.hasErrors()) {
@@ -61,7 +100,7 @@ public class AuthController {
         }
 
         try {
-            RegisterResponse response = authService.register(request);
+            RegisterResponseDTO response = authService.register(request);
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
         } catch (RuntimeException e) {
             Map<String, String> error = new HashMap<>();

@@ -10,7 +10,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class TicketRequestDTO {
-    private Integer idUsuario;
     private String andar;
     private String localizacao;
     private String descricaoLocalizacao;
