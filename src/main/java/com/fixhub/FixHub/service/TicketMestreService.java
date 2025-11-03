@@ -72,4 +72,29 @@ public class TicketMestreService {
 
         return ticketMestreRepository.findAll(spec);
     }
+
+    public TicketMestre buscarTicketMestrePorId(Integer idTicketMestre) {
+        Pessoa funcionario = authUtil.getPessoaUsuarioLogado();
+
+        if (!authUtil.isUsuarioFuncionario()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas funcionários podem acessar esta funcionalidade");
+        }
+
+        TicketMestre ticketMestre = ticketMestreRepository.findById(idTicketMestre)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
+
+        EquipeResponsavel equipeFuncionario;
+        try {
+            equipeFuncionario = EquipeResponsavel.valueOf(String.valueOf(funcionario.getCargo()));
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cargo do funcionário inválido para filtragem");
+        }
+
+        if (ticketMestre.getEquipeResponsavel() != equipeFuncionario) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ticket pertence a outra equipe. Acesso negado.");
+        }
+
+        return ticketMestre;
+    }
+
 }

@@ -35,4 +35,10 @@ public class TicketMestreController {
         );
         return ResponseEntity.ok(lista);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<TicketMestre> buscarPorId(@PathVariable Integer id) {
+        TicketMestre ticket = ticketMestreService.buscarTicketMestrePorId(id);
+        return ResponseEntity.ok(ticket);
+    }
 }
