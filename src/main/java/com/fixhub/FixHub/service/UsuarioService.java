@@ -22,7 +22,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.Period;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -34,9 +33,6 @@ public class UsuarioService {
     private final AuthUtil authUtil;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Lista usuários clientes com filtros
-     */
     public List<PessoaResponseDTO> listarUsuariosComFiltros(
             String nome,
             String email,
@@ -96,9 +92,6 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Edita dados do usuário cliente
-     */
     public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email, String senha) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -141,9 +134,6 @@ public class UsuarioService {
         return PessoaMapper.toResponseDTO(usuario, usuarioEntity);
     }
 
-    /**
-     * Desativa um usuário cliente
-     */
     public void desativarUsuario(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -173,9 +163,6 @@ public class UsuarioService {
         usuarioRepository.save(usuarioEntity);
     }
 
-    /**
-     * Reativa um usuário cliente
-     */
     public void reativarUsuario(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
