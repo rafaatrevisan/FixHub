@@ -20,8 +20,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,9 +33,6 @@ public class UsuarioService {
     private final AuthUtil authUtil;
     private final PasswordEncoder passwordEncoder;
 
-    /**
-     * Lista usuários clientes com filtros
-     */
     public List<PessoaResponseDTO> listarUsuariosComFiltros(
             String nome,
             String email,
@@ -95,10 +92,7 @@ public class UsuarioService {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Edita dados do usuário cliente
-     */
-    public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email) {
+    public PessoaResponseDTO editarUsuario(Integer id, Pessoa usuarioAtualizado, String email, String senha) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
         if (!(authUtil.usuarioTemCargo(Cargo.GERENTE.name()) || authUtil.usuarioTemCargo(Cargo.SUPORTE.name()))) {
@@ -116,7 +110,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Não é possível editar um usuário inativo");
         }
 
-        validarEdicaoUsuario(usuarioAtualizado, email);
+        validarEdicaoUsuario(usuarioAtualizado, email, senha);
 
         if (usuarioAtualizado.getNome() != null) usuario.setNome(usuarioAtualizado.getNome());
         if (usuarioAtualizado.getDataNascimento() != null) usuario.setDataNascimento(usuarioAtualizado.getDataNascimento());
@@ -132,14 +126,14 @@ public class UsuarioService {
         if (email != null && !email.isBlank()) {
             usuarioEntity.setEmail(email);
         }
+        if (senha != null && !senha.isBlank()) {
+            usuarioEntity.setSenha(passwordEncoder.encode(senha));
+        }
         usuarioRepository.save(usuarioEntity);
 
         return PessoaMapper.toResponseDTO(usuario, usuarioEntity);
     }
 
-    /**
-     * Desativa um usuário cliente
-     */
     public void desativarUsuario(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -169,9 +163,6 @@ public class UsuarioService {
         usuarioRepository.save(usuarioEntity);
     }
 
-    /**
-     * Reativa um usuário cliente
-     */
     public void reativarUsuario(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -201,22 +192,27 @@ public class UsuarioService {
         usuarioRepository.save(usuarioEntity);
     }
 
-    private void validarEdicaoUsuario(Pessoa usuarioAtualizado, String email) {
+    private void validarEdicaoUsuario(Pessoa usuarioAtualizado, String email, String senha) {
         if (usuarioAtualizado.getNome() != null && usuarioAtualizado.getNome().isBlank()) {
             throw new BusinessException("O campo nome não pode estar vazio");
         }
         if (usuarioAtualizado.getTelefone() != null && !ValidationUtil.isTelefoneValido(usuarioAtualizado.getTelefone())) {
             throw new BusinessException("O telefone deve ter 10 ou 11 dígitos e conter apenas números");
         }
-        if (usuarioAtualizado.getDataNascimento() != null &&
-                usuarioAtualizado.getDataNascimento().isAfter(LocalDate.now())) {
+        if (usuarioAtualizado.getDataNascimento() != null && usuarioAtualizado.getDataNascimento().isAfter(LocalDate.now())) {
             throw new BusinessException("A data de nascimento deve estar no passado");
         }
-        if (email == null || email.isBlank()) {
-            throw new BusinessException("O campo email é obrigatório");
+        if (usuarioAtualizado.getDataNascimento() != null) {
+            int idade = Period.between(usuarioAtualizado.getDataNascimento(), LocalDate.now()).getYears();
+            if (idade < 16) {
+                throw new BusinessException("O usuário deve ter pelo menos 16 anos");
+            }
         }
-        if (!ValidationUtil.isEmailValido(email)) {
+        if (email != null && !email.isBlank() && !ValidationUtil.isEmailValido(email)) {
             throw new BusinessException("O campo email é inválido. Informe um endereço de e‑mail válido.");
+        }
+        if (senha != null && !senha.isBlank() && senha.length() < 6) {
+            throw new BusinessException("A senha deve conter no mínimo 6 caracteres");
         }
     }
 }

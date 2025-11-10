@@ -41,11 +41,6 @@ public class PessoaService {
         return pessoa;
     }
 
-    public Pessoa criarPessoa(Pessoa pessoa) {
-        validarPessoa(pessoa);
-        atribuirCargoAutomatico(pessoa);
-        return pessoaRepository.save(pessoa);
-    }
 
     public Pessoa atualizarPessoa(Integer id, Pessoa pessoaAtualizada) {
         // Obtém o usuário logado automaticamente

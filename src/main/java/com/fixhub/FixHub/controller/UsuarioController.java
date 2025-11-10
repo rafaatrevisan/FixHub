@@ -1,6 +1,7 @@
 package com.fixhub.FixHub.controller;
 
 import com.fixhub.FixHub.model.dto.PessoaResponseDTO;
+import com.fixhub.FixHub.model.entity.Pessoa;
 import com.fixhub.FixHub.service.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -31,6 +32,17 @@ public class UsuarioController {
                 nome, email, telefone, ativo, dataInicioCadastro, dataFimCadastro
         );
         return ResponseEntity.ok(lista);
+    }
+
+    @PutMapping("{id}")
+    public ResponseEntity<PessoaResponseDTO> editarUsuario(
+            @PathVariable Integer id,
+            @RequestBody Pessoa usuarioAtualizado,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String senha
+    ) {
+        PessoaResponseDTO editado = usuarioService.editarUsuario(id, usuarioAtualizado, email, senha);
+        return ResponseEntity.ok(editado);
     }
 
     @PatchMapping("{id}/desativar")

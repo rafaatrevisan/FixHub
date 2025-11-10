@@ -1,5 +1,10 @@
 package com.fixhub.FixHub.util;
 
+import com.fixhub.FixHub.exception.BusinessException;
+import com.fixhub.FixHub.model.entity.Pessoa;
+
+import java.time.LocalDate;
+import java.time.Period;
 import java.util.regex.Pattern;
 
 public class ValidationUtil {
@@ -30,4 +35,5 @@ public class ValidationUtil {
         }
         return EMAIL_PATTERN.matcher(email).matches();
     }
+
 }
