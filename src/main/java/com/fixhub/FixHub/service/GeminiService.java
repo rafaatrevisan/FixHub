@@ -41,7 +41,7 @@ public class GeminiService {
             
                 Sua tarefa:
                 1. Determinar a prioridade entre: BAIXA, REGULAR, IMPORTANTE, URGENTE
-                2. Determinar a equipe responsável entre: LIMPEZA, MANUTENCAO, ADMINISTRACAO
+                2. Determinar a equipe responsável entre: LIMPEZA, MANUTENCAO
             
                 Responda SOMENTE em JSON, sem usar blocos de código ou markdown, no formato:
                 {
@@ -61,7 +61,7 @@ public class GeminiService {
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(GEMINI_URL))
                     .header("Content-Type", "application/json")
-                    .header("X-goog-api-key", apiKey) // 🔹 Enviando a chave no header
+                    .header("X-goog-api-key", apiKey)
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
