@@ -15,6 +15,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.persistence.criteria.Join;
+import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Root;
+import javax.persistence.criteria.Subquery;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -84,10 +88,13 @@ public class RelatorioService {
 
         if (funcionario != null && !funcionario.isBlank()) {
             spec = spec.and((root, query, cb) -> {
-                var joinResolucao = root.join("resolucoes", javax.persistence.criteria.JoinType.LEFT);
-                var joinPessoa = joinResolucao.join("funcionario", javax.persistence.criteria.JoinType.LEFT);
-                query.distinct(true);
-                return cb.like(cb.lower(joinPessoa.get("nome")), "%" + funcionario.toLowerCase() + "%");
+                Subquery<Integer> subquery = query.subquery(Integer.class);
+                Root<ResolucaoTicket> resolucaoRoot = subquery.from(ResolucaoTicket.class);
+                subquery.select(resolucaoRoot.get("ticket").get("id"))
+                        .where(cb.like(cb.lower(resolucaoRoot.get("funcionario").get("nome")),
+                                "%" + funcionario.toLowerCase() + "%"));
+
+                return cb.in(root.get("id")).value(subquery);
             });
         }
 
