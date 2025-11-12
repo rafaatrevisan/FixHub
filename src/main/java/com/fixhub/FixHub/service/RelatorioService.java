@@ -79,8 +79,16 @@ public class RelatorioService {
                 spec = spec.and((root, query, cb) ->
                         cb.equal(root.get("equipeResponsavel"), equipeEnum));
             } catch (IllegalArgumentException e) {
-                // Ignora equipe inválida
             }
+        }
+
+        if (funcionario != null && !funcionario.isBlank()) {
+            spec = spec.and((root, query, cb) -> {
+                var joinResolucao = root.join("resolucoes", javax.persistence.criteria.JoinType.LEFT);
+                var joinPessoa = joinResolucao.join("funcionario", javax.persistence.criteria.JoinType.LEFT);
+                query.distinct(true);
+                return cb.like(cb.lower(joinPessoa.get("nome")), "%" + funcionario.toLowerCase() + "%");
+            });
         }
 
         List<TicketMestre> tickets = ticketMestreRepository.findAll(spec);
