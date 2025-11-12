@@ -22,7 +22,7 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
     @Query(value = """
         SELECT AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao))
         FROM ticket_mestre t
-        JOIN resolucao_ticket r ON r.ticket_id = t.id
+        JOIN resolucao_ticket r ON r.id_ticket_mestre = t.id
         WHERE t.status = 'CONCLUIDO'
         """, nativeQuery = true)
     Double averageResolutionTime();
@@ -33,7 +33,7 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
     @Query(value = """
         SELECT r.funcionario_id, f.nome, COUNT(r.id) AS total_resolvidos
         FROM resolucao_ticket r
-        JOIN funcionario f ON r.funcionario_id = f.id
+        JOIN pessoa f ON r.funcionario_id = f.id
         GROUP BY r.funcionario_id, f.nome
         """, nativeQuery = true)
     List<Object[]> countTicketsResolvidosPorFuncionario();
@@ -44,8 +44,8 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
     @Query(value = """
         SELECT r.funcionario_id, f.nome, AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao)) AS media_minutos
         FROM resolucao_ticket r
-        JOIN ticket_mestre t ON r.ticket_id = t.id
-        JOIN funcionario f ON r.funcionario_id = f.id
+        JOIN ticket_mestre t ON r.id_ticket_mestre = t.id
+        JOIN pessoa f ON r.funcionario_id = f.id
         WHERE t.status = 'RESOLVIDO'
         GROUP BY r.funcionario_id, f.nome
         """, nativeQuery = true)
