@@ -18,12 +18,14 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
 
     /**
      * Tempo médio de resolução (em minutos)
+     * CORREÇÃO: A ordem deve ser (data_criacao, data_resolucao)
      */
     @Query(value = """
         SELECT AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao))
         FROM ticket_mestre t
         JOIN resolucao_ticket r ON r.id_ticket_mestre = t.id
-        WHERE t.status = 'CONCLUIDO'
+        WHERE t.status = 'CONCLUIDO' AND r.data_resolucao IS NOT NULL
+          AND r.data_resolucao > t.data_criacao_ticket
         """, nativeQuery = true)
     Double averageResolutionTime();
 
@@ -35,20 +37,27 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
         FROM resolucao_ticket r
         JOIN pessoa f ON r.id_funcionario = f.id
         GROUP BY r.id_funcionario, f.nome, f.cargo
+        ORDER BY total_resolvidos DESC
         """, nativeQuery = true)
     List<Object[]> countTicketsResolvidosPorFuncionario();
 
-
     /**
      * Tempo médio de resolução por funcionário (em minutos)
+     * CORREÇÃO: A ordem deve ser (data_criacao, data_resolucao)
      */
     @Query(value = """
-        SELECT r.id_funcionario, f.nome, AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao)) AS media_minutos
+        SELECT 
+            r.id_funcionario, 
+            f.nome, 
+            AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao)) AS media_minutos
         FROM resolucao_ticket r
         JOIN ticket_mestre t ON r.id_ticket_mestre = t.id
         JOIN pessoa f ON r.id_funcionario = f.id
-        WHERE t.status = 'CONCLUIDO'
+        WHERE t.status = 'CONCLUIDO' 
+          AND r.data_resolucao IS NOT NULL
+          AND r.data_resolucao > t.data_criacao_ticket
         GROUP BY r.id_funcionario, f.nome
+        ORDER BY media_minutos ASC
         """, nativeQuery = true)
     List<Object[]> averageResolutionTimePorFuncionario();
 

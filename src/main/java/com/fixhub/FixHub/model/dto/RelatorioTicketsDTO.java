@@ -1,8 +1,8 @@
 package com.fixhub.FixHub.model.dto;
 
-import com.fixhub.FixHub.model.enums.StatusTicket;
-import com.fixhub.FixHub.model.enums.PrioridadeTicket;
 import com.fixhub.FixHub.model.enums.EquipeResponsavel;
+import com.fixhub.FixHub.model.enums.PrioridadeTicket;
+import com.fixhub.FixHub.model.enums.StatusTicket;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 public class RelatorioTicketsDTO {
-    private Integer id;
+    private Long id;
     private String descricao;
     private StatusTicket status;
     private PrioridadeTicket prioridade;
@@ -23,4 +23,5 @@ public class RelatorioTicketsDTO {
     private LocalDateTime dataCriacao;
     private LocalDateTime dataResolucao;
     private String funcionarioResponsavel;
+    private Long tempoResolucao;
 }

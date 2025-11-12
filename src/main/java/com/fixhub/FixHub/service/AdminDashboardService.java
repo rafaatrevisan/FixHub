@@ -130,7 +130,10 @@ public class AdminDashboardService {
             // Encontra o tempo médio correspondente
             Double tempoMedio = tempoMedioPorFuncionario.stream()
                     .filter(t -> ((Number) t[0]).intValue() == idFuncionario)
-                    .map(t -> ((Number) t[2]).doubleValue())
+                    .map(t -> {
+                        Double tempo = ((Number) t[2]).doubleValue();
+                        return tempo != null ? Math.abs(tempo) : 0.0;
+                    })
                     .findFirst()
                     .orElse(0.0);
 
