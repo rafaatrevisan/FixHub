@@ -160,7 +160,7 @@ public class RelatorioService {
             baos.write(0xBF);
 
             // Cabeçalho
-            writer.println("ID;Descrição;Cliente;Status;Prioridade;Equipe;Funcionário;Data Criação;Data Resolução;Tempo (min)");
+            writer.println("ID;Descrição;Status;Prioridade;Equipe;Funcionário;Data Criação;Data Resolução;Tempo (min)");
 
             // Dados
             for (RelatorioTicketsDTO ticket : tickets) {
