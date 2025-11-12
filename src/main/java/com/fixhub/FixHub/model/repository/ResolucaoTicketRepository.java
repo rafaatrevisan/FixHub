@@ -31,12 +31,13 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
      * Tickets resolvidos por funcionário
      */
     @Query(value = """
-        SELECT r.id_funcionario, f.nome, COUNT(r.id) AS total_resolvidos
+        SELECT r.id_funcionario, f.nome, f.cargo, COUNT(r.id) AS total_resolvidos
         FROM resolucao_ticket r
         JOIN pessoa f ON r.id_funcionario = f.id
-        GROUP BY r.id_funcionario, f.nome
+        GROUP BY r.id_funcionario, f.nome, f.cargo
         """, nativeQuery = true)
     List<Object[]> countTicketsResolvidosPorFuncionario();
+
 
     /**
      * Tempo médio de resolução por funcionário (em minutos)
@@ -46,7 +47,7 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
         FROM resolucao_ticket r
         JOIN ticket_mestre t ON r.id_ticket_mestre = t.id
         JOIN pessoa f ON r.id_funcionario = f.id
-        WHERE t.status = 'RESOLVIDO'
+        WHERE t.status = 'CONCLUIDO'
         GROUP BY r.id_funcionario, f.nome
         """, nativeQuery = true)
     List<Object[]> averageResolutionTimePorFuncionario();

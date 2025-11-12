@@ -42,7 +42,7 @@ public class AdminDashboardService {
 
         double percentualSLA = 0.0;
         if (total != null && total > 0) {
-            percentualSLA = ((double) resolvidos / total) * 100;
+            percentualSLA = Math.round(((double) resolvidos / total) * 10000.0) / 100.0;
         }
 
         return DashboardResumoDTO.builder()
@@ -124,7 +124,8 @@ public class AdminDashboardService {
         return resolvidosPorFuncionario.stream().map(obj -> {
             Integer idFuncionario = ((Number) obj[0]).intValue();
             String nomeFuncionario = (String) obj[1];
-            Long totalTickets = ((Number) obj[2]).longValue();
+            String cargoFuncionario = (String) obj[2];
+            Long totalTickets = ((Number) obj[3]).longValue();
 
             // Encontra o tempo médio correspondente
             Double tempoMedio = tempoMedioPorFuncionario.stream()
@@ -136,7 +137,7 @@ public class AdminDashboardService {
             return DesempenhoFuncionarioDTO.builder()
                     .idFuncionario(idFuncionario)
                     .nomeFuncionario(nomeFuncionario)
-                    .cargo("FUNCIONARIO")
+                    .cargo(cargoFuncionario)
                     .ticketsResolvidos(totalTickets)
                     .tempoMedioResolucao(tempoMedio)
                     .build();
