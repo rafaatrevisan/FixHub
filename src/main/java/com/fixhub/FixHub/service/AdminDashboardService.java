@@ -66,7 +66,10 @@ public class AdminDashboardService {
 
         return ticketMestreRepository.countTicketsByStatus()
                 .stream()
-                .map(obj -> new GraficoTicketsDTO(obj[0].toString(), (Long) obj[1]))
+                .map(obj -> new GraficoTicketsDTO(
+                        obj[0].toString(),
+                        ((Number) obj[1]).longValue()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -81,7 +84,10 @@ public class AdminDashboardService {
 
         return ticketMestreRepository.countTicketsByPrioridade()
                 .stream()
-                .map(obj -> new GraficoTicketsDTO(obj[0].toString(), (Long) obj[1]))
+                .map(obj -> new GraficoTicketsDTO(
+                        obj[0].toString(),
+                        ((Number) obj[1]).longValue()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -96,7 +102,10 @@ public class AdminDashboardService {
 
         return ticketMestreRepository.countTicketsByEquipe()
                 .stream()
-                .map(obj -> new GraficoTicketsDTO(obj[0].toString(), (Long) obj[1]))
+                .map(obj -> new GraficoTicketsDTO(
+                        obj[0].toString(),
+                        ((Number) obj[1]).longValue()
+                ))
                 .collect(Collectors.toList());
     }
 
@@ -110,18 +119,17 @@ public class AdminDashboardService {
         }
 
         List<Object[]> resolvidosPorFuncionario = resolucaoTicketRepository.countTicketsResolvidosPorFuncionario();
-
         List<Object[]> tempoMedioPorFuncionario = resolucaoTicketRepository.averageResolutionTimePorFuncionario();
 
         return resolvidosPorFuncionario.stream().map(obj -> {
-            Integer idFuncionario = (Integer) obj[0];
+            Integer idFuncionario = ((Number) obj[0]).intValue();
             String nomeFuncionario = (String) obj[1];
-            Long totalTickets = (Long) obj[2];
+            Long totalTickets = ((Number) obj[2]).longValue();
 
             // Encontra o tempo médio correspondente
             Double tempoMedio = tempoMedioPorFuncionario.stream()
-                    .filter(t -> ((Integer) t[0]).equals(idFuncionario))
-                    .map(t -> (Double) t[2])
+                    .filter(t -> ((Number) t[0]).intValue() == idFuncionario)
+                    .map(t -> ((Number) t[2]).doubleValue())
                     .findFirst()
                     .orElse(0.0);
 
