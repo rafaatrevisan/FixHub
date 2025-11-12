@@ -19,26 +19,45 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
     /**
      * Tempo médio de resolução (em minutos)
      */
-    @Query("SELECT AVG(TIMESTAMPDIFF(MINUTE, t.dataCriacaoTicket, r.dataResolucao)) " +
-            "FROM TicketMestre t JOIN ResolucaoTicket r ON r.ticket.id = t.id " +
-            "WHERE t.status = 'RESOLVIDO'")
+    @Query(value = """
+        SELECT AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao))
+        FROM ticket_mestre t
+        JOIN resolucao_ticket r ON r.ticket_id = t.id
+        WHERE t.status = 'CONCLUIDO'
+        """, nativeQuery = true)
     Double averageResolutionTime();
+
     /**
      * Tickets resolvidos por funcionário
      */
-    @Query("SELECT r.funcionario.id, r.funcionario.nome, COUNT(r) " +
-            "FROM ResolucaoTicket r GROUP BY r.funcionario.id, r.funcionario.nome")
+    @Query(value = """
+        SELECT r.funcionario_id, f.nome, COUNT(r.id) AS total_resolvidos
+        FROM resolucao_ticket r
+        JOIN funcionario f ON r.funcionario_id = f.id
+        GROUP BY r.funcionario_id, f.nome
+        """, nativeQuery = true)
     List<Object[]> countTicketsResolvidosPorFuncionario();
+
     /**
-     * Tempo médio de resolução por funcionário
+     * Tempo médio de resolução por funcionário (em minutos)
      */
-    @Query("SELECT r.funcionario.id, r.funcionario.nome, AVG(TIMESTAMPDIFF(MINUTE, t.dataCriacaoTicket, r.dataResolucao)) " +
-            "FROM ResolucaoTicket r JOIN TicketMestre t ON r.ticket.id = t.id " +
-            "WHERE t.status = 'RESOLVIDO' GROUP BY r.funcionario.id, r.funcionario.nome")
+    @Query(value = """
+        SELECT r.funcionario_id, f.nome, AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao)) AS media_minutos
+        FROM resolucao_ticket r
+        JOIN ticket_mestre t ON r.ticket_id = t.id
+        JOIN funcionario f ON r.funcionario_id = f.id
+        WHERE t.status = 'RESOLVIDO'
+        GROUP BY r.funcionario_id, f.nome
+        """, nativeQuery = true)
     List<Object[]> averageResolutionTimePorFuncionario();
+
     /**
      * Tickets resolvidos no período
      */
-    @Query("SELECT COUNT(r) FROM ResolucaoTicket r WHERE r.dataResolucao BETWEEN :inicio AND :fim")
+    @Query(value = """
+        SELECT COUNT(r.id)
+        FROM resolucao_ticket r
+        WHERE r.data_resolucao BETWEEN :inicio AND :fim
+        """, nativeQuery = true)
     Long countTicketsResolvidosNoPeriodo(LocalDateTime inicio, LocalDateTime fim);
 }

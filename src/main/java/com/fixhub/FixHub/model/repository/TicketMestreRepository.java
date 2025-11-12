@@ -29,9 +29,6 @@ public interface TicketMestreRepository extends JpaRepository<TicketMestre, Inte
     @Query("SELECT t.equipeResponsavel, COUNT(t) FROM TicketMestre t GROUP BY t.equipeResponsavel")
     List<Object[]> countTicketsByEquipe();
 
-    @Query("SELECT AVG(TIMESTAMPDIFF(MINUTE, t.dataCriacaoTicket, t.dataResolucao)) FROM TicketMestre t WHERE t.status = 'RESOLVIDO'")
-    Double averageResolutionTime();
-
     @Query("SELECT COUNT(t) FROM TicketMestre t WHERE t.status = :status")
     Long countTicketsByStatusValue(StatusTicket status);
 
