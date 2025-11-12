@@ -180,7 +180,7 @@ public class RelatorioService {
      * Formata linha do CSV
      */
     private String formatarLinhaCSV(RelatorioTicketsDTO ticket) {
-        return String.format("%d;%s;%s;%s;%s;%s;%s;%s;%s;%s",
+        return String.format("%d;%s;%s;%s;%s;%s;%s;%s;%s",
                 ticket.getId(),
                 escaparCSV(ticket.getDescricao()),
                 ticket.getStatus() != null ? ticket.getStatus().name().replace("_", " ") : "",

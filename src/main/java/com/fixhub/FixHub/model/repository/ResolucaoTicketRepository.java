@@ -17,15 +17,20 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
     Optional<ResolucaoTicket> findByTicketId(Integer ticketMestreId);
 
     /**
-     * Tempo médio de resolução (em minutos)
-     * CORREÇÃO: A ordem deve ser (data_criacao, data_resolucao)
+     * Tempo médio de resolução (em minutos, arredondando mínimo de 1 min)
+     * Inclui tickets CONCLUIDOS e REPROVADOS.
      */
     @Query(value = """
-        SELECT AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao))
+        SELECT 
+            COALESCE(
+                AVG(GREATEST(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao), 1)),
+                0
+            )
         FROM ticket_mestre t
         JOIN resolucao_ticket r ON r.id_ticket_mestre = t.id
-        WHERE t.status = 'CONCLUIDO' AND r.data_resolucao IS NOT NULL
-          AND r.data_resolucao > t.data_criacao_ticket
+        WHERE (t.status = 'CONCLUIDO' OR t.status = 'REPROVADO')
+          AND r.data_resolucao IS NOT NULL
+          AND r.data_resolucao >= t.data_criacao_ticket
         """, nativeQuery = true)
     Double averageResolutionTime();
 
@@ -42,20 +47,23 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
     List<Object[]> countTicketsResolvidosPorFuncionario();
 
     /**
-     * Tempo médio de resolução por funcionário (em minutos)
-     * CORREÇÃO: A ordem deve ser (data_criacao, data_resolucao)
+     * Tempo médio de resolução por funcionário (em minutos, mínimo de 1)
+     * Inclui tickets CONCLUIDOS e REPROVADOS.
      */
     @Query(value = """
         SELECT 
             r.id_funcionario, 
             f.nome, 
-            AVG(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao)) AS media_minutos
+            COALESCE(
+                AVG(GREATEST(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao), 1)), 
+                0
+            ) AS media_minutos
         FROM resolucao_ticket r
         JOIN ticket_mestre t ON r.id_ticket_mestre = t.id
         JOIN pessoa f ON r.id_funcionario = f.id
-        WHERE t.status = 'CONCLUIDO' 
+        WHERE (t.status = 'CONCLUIDO' OR t.status = 'REPROVADO')
           AND r.data_resolucao IS NOT NULL
-          AND r.data_resolucao > t.data_criacao_ticket
+          AND r.data_resolucao >= t.data_criacao_ticket
         GROUP BY r.id_funcionario, f.nome
         ORDER BY media_minutos ASC
         """, nativeQuery = true)
