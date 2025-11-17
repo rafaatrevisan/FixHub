@@ -15,8 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import javax.persistence.criteria.Join;
-import javax.persistence.criteria.JoinType;
+import javax.persistence.criteria.Predicate;
 import javax.persistence.criteria.Root;
 import javax.persistence.criteria.Subquery;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -40,14 +40,14 @@ public class RelatorioService {
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
 
     /**
-     * Gera relatório detalhado dos tickets com filtros
+     * Gera relatório detalhado dos tickets com filtros (SUPORTA MÚLTIPLOS VALORES)
      */
     public List<RelatorioTicketsDTO> gerarRelatorioTickets(
             LocalDateTime dataInicio,
             LocalDateTime dataFim,
-            StatusTicket status,
-            PrioridadeTicket prioridade,
-            String equipe,
+            List<String> status,        // ALTERADO: StatusTicket → List<String>
+            List<String> prioridade,    // ALTERADO: PrioridadeTicket → List<String>
+            List<String> equipe,        // ALTERADO: String → List<String>
             String funcionario
     ) {
         var usuario = authUtil.getPessoaUsuarioLogado();
@@ -56,47 +56,85 @@ public class RelatorioService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Apenas GERENTE ou SUPORTE podem gerar relatórios.");
         }
 
-        Specification<TicketMestre> spec = Specification.where(null);
+        Specification<TicketMestre> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        if (dataInicio != null && dataFim != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.between(root.get("dataCriacaoTicket"), dataInicio, dataFim));
-        } else if (dataInicio != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.greaterThanOrEqualTo(root.get("dataCriacaoTicket"), dataInicio));
-        } else if (dataFim != null) {
-            spec = spec.and((root, query, cb) ->
-                    cb.lessThanOrEqualTo(root.get("dataCriacaoTicket"), dataFim));
-        }
-
-        if (status != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("status"), status));
-        }
-
-        if (prioridade != null) {
-            spec = spec.and((root, query, cb) -> cb.equal(root.get("prioridade"), prioridade));
-        }
-
-        if (equipe != null && !equipe.isBlank()) {
-            try {
-                EquipeResponsavel equipeEnum = EquipeResponsavel.valueOf(equipe.toUpperCase());
-                spec = spec.and((root, query, cb) ->
-                        cb.equal(root.get("equipeResponsavel"), equipeEnum));
-            } catch (IllegalArgumentException e) {
+            // Filtro de Data
+            if (dataInicio != null && dataFim != null) {
+                predicates.add(cb.between(root.get("dataCriacaoTicket"), dataInicio, dataFim));
+            } else if (dataInicio != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("dataCriacaoTicket"), dataInicio));
+            } else if (dataFim != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("dataCriacaoTicket"), dataFim));
             }
-        }
 
-        if (funcionario != null && !funcionario.isBlank()) {
-            spec = spec.and((root, query, cb) -> {
+            // Filtro de Status (MÚLTIPLOS)
+            if (status != null && !status.isEmpty()) {
+                List<StatusTicket> statusEnum = status.stream()
+                        .map(s -> {
+                            try {
+                                return StatusTicket.valueOf(s.toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                return null;
+                            }
+                        })
+                        .filter(s -> s != null)
+                        .collect(Collectors.toList());
+
+                if (!statusEnum.isEmpty()) {
+                    predicates.add(root.get("status").in(statusEnum));
+                }
+            }
+
+            // Filtro de Prioridade (MÚLTIPLOS)
+            if (prioridade != null && !prioridade.isEmpty()) {
+                List<PrioridadeTicket> prioridadeEnum = prioridade.stream()
+                        .map(p -> {
+                            try {
+                                return PrioridadeTicket.valueOf(p.toUpperCase());
+                            } catch (IllegalArgumentException e) {
+                                return null;
+                            }
+                        })
+                        .filter(p -> p != null)
+                        .collect(Collectors.toList());
+
+                if (!prioridadeEnum.isEmpty()) {
+                    predicates.add(root.get("prioridade").in(prioridadeEnum));
+                }
+            }
+
+            // Filtro de Equipe (MÚLTIPLOS)
+            if (equipe != null && !equipe.isEmpty()) {
+                List<EquipeResponsavel> equipeEnum = equipe.stream()
+                        .map(e -> {
+                            try {
+                                return EquipeResponsavel.valueOf(e.toUpperCase());
+                            } catch (IllegalArgumentException ex) {
+                                return null;
+                            }
+                        })
+                        .filter(e -> e != null)
+                        .collect(Collectors.toList());
+
+                if (!equipeEnum.isEmpty()) {
+                    predicates.add(root.get("equipeResponsavel").in(equipeEnum));
+                }
+            }
+
+            // Filtro de Funcionário
+            if (funcionario != null && !funcionario.isBlank()) {
                 Subquery<Integer> subquery = query.subquery(Integer.class);
                 Root<ResolucaoTicket> resolucaoRoot = subquery.from(ResolucaoTicket.class);
                 subquery.select(resolucaoRoot.get("ticket").get("id"))
                         .where(cb.like(cb.lower(resolucaoRoot.get("funcionario").get("nome")),
                                 "%" + funcionario.toLowerCase() + "%"));
 
-                return cb.in(root.get("id")).value(subquery);
-            });
-        }
+                predicates.add(cb.in(root.get("id")).value(subquery));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
 
         List<TicketMestre> tickets = ticketMestreRepository.findAll(spec);
 
@@ -123,14 +161,12 @@ public class RelatorioService {
                     : null;
             dataResolucao = resolucao.getDataResolucao();
 
-            // CORREÇÃO: Calcula tempo de resolução em MINUTOS (positivo)
             if (dataResolucao != null && ticket.getDataCriacaoTicket() != null) {
                 tempoResolucao = ChronoUnit.MINUTES.between(
-                        ticket.getDataCriacaoTicket(),  // Data INÍCIO
-                        dataResolucao                    // Data FIM
+                        ticket.getDataCriacaoTicket(),
+                        dataResolucao
                 );
 
-                // Garantir que o tempo seja positivo
                 if (tempoResolucao < 0) {
                     tempoResolucao = Math.abs(tempoResolucao);
                 }
@@ -156,9 +192,9 @@ public class RelatorioService {
     public byte[] exportarRelatorioCSV(
             LocalDateTime dataInicio,
             LocalDateTime dataFim,
-            StatusTicket status,
-            PrioridadeTicket prioridade,
-            String equipe,
+            List<String> status,
+            List<String> prioridade,
+            List<String> equipe,
             String funcionario
     ) {
         List<RelatorioTicketsDTO> tickets = gerarRelatorioTickets(
@@ -169,15 +205,12 @@ public class RelatorioService {
              OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
              PrintWriter writer = new PrintWriter(osw)) {
 
-            // BOM para UTF-8
             baos.write(0xEF);
             baos.write(0xBB);
             baos.write(0xBF);
 
-            // Cabeçalho
-            writer.println("ID;Descrição;Status;Prioridade;Equipe;Funcionário;Data Criação;Data Atualização;Tempo (min)");
+            writer.println("ID;Descrição;Status;Prioridade;Equipe;Funcionário;Data Criação;Data Resolução;Tempo (min)");
 
-            // Dados
             for (RelatorioTicketsDTO ticket : tickets) {
                 writer.println(formatarLinhaCSV(ticket));
             }
