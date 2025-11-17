@@ -78,4 +78,63 @@ public interface ResolucaoTicketRepository extends JpaRepository<ResolucaoTicket
         WHERE r.data_resolucao BETWEEN :inicio AND :fim
         """, nativeQuery = true)
     Long countTicketsResolvidosNoPeriodo(LocalDateTime inicio, LocalDateTime fim);
+
+    /**
+     * Tempo médio de resolução no período (em minutos)
+     */
+    @Query(value = """
+    SELECT 
+        COALESCE(
+            AVG(GREATEST(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao), 1)),
+            0
+        )
+    FROM ticket_mestre t
+    JOIN resolucao_ticket r ON r.id_ticket_mestre = t.id
+    WHERE (t.status = 'CONCLUIDO' OR t.status = 'REPROVADO')
+      AND r.data_resolucao IS NOT NULL
+      AND r.data_resolucao >= t.data_criacao_ticket
+      AND (:dataInicio IS NULL OR t.data_criacao_ticket >= :dataInicio)
+      AND (:dataFim IS NULL OR t.data_criacao_ticket <= :dataFim)
+    """, nativeQuery = true)
+    Double averageResolutionTimeNoPeriodo(LocalDateTime dataInicio, LocalDateTime dataFim);
+
+    /**
+     * Tickets resolvidos por funcionário no período
+     */
+    @Query(value = """
+    SELECT r.id_funcionario, f.nome, f.cargo, COUNT(r.id) AS total_resolvidos
+    FROM resolucao_ticket r
+    JOIN pessoa f ON r.id_funcionario = f.id
+    JOIN ticket_mestre t ON r.id_ticket_mestre = t.id
+    WHERE (:dataInicio IS NULL OR t.data_criacao_ticket >= :dataInicio)
+      AND (:dataFim IS NULL OR t.data_criacao_ticket <= :dataFim)
+    GROUP BY r.id_funcionario, f.nome, f.cargo
+    ORDER BY total_resolvidos DESC
+    """, nativeQuery = true)
+    List<Object[]> countTicketsResolvidosPorFuncionarioNoPeriodo(LocalDateTime dataInicio, LocalDateTime dataFim);
+
+    /**
+     * Tempo médio de resolução por funcionário no período (em minutos)
+     */
+    @Query(value = """
+    SELECT 
+        r.id_funcionario, 
+        f.nome, 
+        COALESCE(
+            AVG(GREATEST(TIMESTAMPDIFF(MINUTE, t.data_criacao_ticket, r.data_resolucao), 1)), 
+            0
+        ) AS media_minutos
+    FROM resolucao_ticket r
+    JOIN ticket_mestre t ON r.id_ticket_mestre = t.id
+    JOIN pessoa f ON r.id_funcionario = f.id
+    WHERE (t.status = 'CONCLUIDO' OR t.status = 'REPROVADO')
+      AND r.data_resolucao IS NOT NULL
+      AND r.data_resolucao >= t.data_criacao_ticket
+      AND (:dataInicio IS NULL OR t.data_criacao_ticket >= :dataInicio)
+      AND (:dataFim IS NULL OR t.data_criacao_ticket <= :dataFim)
+    GROUP BY r.id_funcionario, f.nome
+    ORDER BY media_minutos ASC
+    """, nativeQuery = true)
+    List<Object[]> averageResolutionTimePorFuncionarioNoPeriodo(LocalDateTime dataInicio, LocalDateTime dataFim);
+
 }
