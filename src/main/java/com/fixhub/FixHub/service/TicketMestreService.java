@@ -1,10 +1,13 @@
 package com.fixhub.FixHub.service;
 
+import com.fixhub.FixHub.model.dto.TicketMestreDetalhesDTO;
 import com.fixhub.FixHub.model.entity.Pessoa;
+import com.fixhub.FixHub.model.entity.ResolucaoTicket;
 import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.PrioridadeTicket;
 import com.fixhub.FixHub.model.enums.StatusTicket;
 import com.fixhub.FixHub.model.enums.EquipeResponsavel;
+import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
 import com.fixhub.FixHub.model.repository.TicketMestreRepository;
 import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
@@ -15,12 +18,14 @@ import org.springframework.http.HttpStatus;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 public class TicketMestreService {
 
     private final TicketMestreRepository ticketMestreRepository;
+    private final ResolucaoTicketRepository resolucaoTicketRepository;
     private final AuthUtil authUtil;
 
     public List<TicketMestre> listarTicketsMestreComFiltros(
@@ -73,7 +78,7 @@ public class TicketMestreService {
         return ticketMestreRepository.findAll(spec);
     }
 
-    public TicketMestre buscarTicketMestrePorId(Integer idTicketMestre) {
+    public TicketMestreDetalhesDTO buscarTicketMestrePorId(Integer idTicketMestre) {
         Pessoa funcionario = authUtil.getPessoaUsuarioLogado();
 
         if (!authUtil.isUsuarioFuncionario()) {
@@ -94,7 +99,31 @@ public class TicketMestreService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Ticket pertence a outra equipe. Acesso negado.");
         }
 
-        return ticketMestre;
+        // Buscar informações da resolução, se existir
+        Optional<ResolucaoTicket> resolucaoOpt = resolucaoTicketRepository.findByTicketId(idTicketMestre);
+
+        TicketMestreDetalhesDTO dto = TicketMestreDetalhesDTO.builder()
+                .idTicketMestre(ticketMestre.getId())
+                .dataCriacaoTicket(ticketMestre.getDataCriacaoTicket())
+                .dataAtualizacao(ticketMestre.getDataAtualizacao())
+                .status(ticketMestre.getStatus())
+                .prioridade(ticketMestre.getPrioridade())
+                .equipeResponsavel(ticketMestre.getEquipeResponsavel())
+                .andar(ticketMestre.getAndar())
+                .localizacao(ticketMestre.getLocalizacao())
+                .descricaoLocalizacao(ticketMestre.getDescricaoLocalizacao())
+                .descricaoTicketUsuario(ticketMestre.getDescricaoTicketUsuario())
+                .imagem(ticketMestre.getImagem())
+                .build();
+
+        if (resolucaoOpt.isPresent()) {
+            ResolucaoTicket resolucao = resolucaoOpt.get();
+            dto.setNomeFuncionario(resolucao.getFuncionario().getNome());
+            dto.setDescricaoResolucao(resolucao.getDescricao());
+            dto.setDataResolucao(resolucao.getDataResolucao());
+        }
+
+        return dto;
     }
 
 }
