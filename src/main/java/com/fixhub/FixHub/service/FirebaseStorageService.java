@@ -1,10 +1,8 @@
 package com.fixhub.FixHub.service;
 
-import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobInfo;
-import com.google.cloud.storage.Storage;
-import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.*;
 import com.google.firebase.FirebaseApp;
+import com.google.firebase.cloud.StorageClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -58,91 +56,73 @@ public class FirebaseStorageService {
         }
 
         try {
-            if (storage == null) {
-                storage = StorageOptions.getDefaultInstance().getService();
-            }
+            // Pega o bucket usando o Firebase Admin (com suas credenciais)
+            Bucket bucket = StorageClient.getInstance().bucket(bucketName);
 
-            // Gerar nome único para o arquivo
+            // Gera nome único
             String nomeOriginal = arquivo.getOriginalFilename();
             String extensao = "";
             if (nomeOriginal != null && nomeOriginal.contains(".")) {
                 extensao = nomeOriginal.substring(nomeOriginal.lastIndexOf("."));
             }
-            String nomeArquivo = "tickets/" + UUID.randomUUID().toString() + extensao;
+            String nomeArquivo = "tickets/" + UUID.randomUUID() + extensao;
 
-            log.info("Fazendo upload da imagem: {} ({}KB)", nomeOriginal, arquivo.getSize() / 1024);
+            log.info("Enviando imagem: {}", nomeArquivo);
 
-            // Criar BlobInfo
-            BlobInfo blobInfo = BlobInfo.newBuilder(bucketName, nomeArquivo)
-                    .setContentType(contentType)
-                    .build();
+            bucket.create(nomeArquivo, arquivo.getBytes(), contentType);
 
-            // Fazer upload
-            Blob blob = storage.create(blobInfo, arquivo.getBytes());
-
-            // Retornar URL pública
             String url = String.format("%s/%s/%s", baseUrl, bucketName, nomeArquivo);
-            log.info("✓ Imagem enviada com sucesso: {}", url);
+            log.info("✓ Imagem enviada: {}", url);
+
             return url;
 
         } catch (Exception e) {
-            log.error("Erro ao fazer upload da imagem: {}", e.getMessage(), e);
-            throw new IOException("Erro ao fazer upload da imagem para o Firebase: " + e.getMessage(), e);
+            log.error("Erro ao enviar imagem: {}", e.getMessage(), e);
+            throw new IOException("Erro ao enviar imagem para o Firebase: " + e.getMessage());
         }
     }
 
     public void deletarImagem(String imagemUrl) {
-        if (imagemUrl == null || imagemUrl.isBlank()) {
-            return;
-        }
+        if (imagemUrl == null || imagemUrl.isBlank()) return;
 
-        // Não deletar URLs placeholder
+        // URLs placeholder não são deletadas
         if (imagemUrl.contains("placeholder") || imagemUrl.contains("via.placeholder")) {
             log.debug("URL placeholder detectada, ignorando deleção");
             return;
         }
 
-        // Se Firebase não estiver habilitado, apenas logar
         if (!firebaseEnabled) {
-            log.warn("Firebase desabilitado. Deleção de imagem ignorada: {}", imagemUrl);
+            log.warn("Firebase desabilitado. Deleção ignorada: {}", imagemUrl);
             return;
         }
 
         if (FirebaseApp.getApps().isEmpty()) {
-            log.warn("Firebase não está inicializado. Deleção de imagem ignorada: {}", imagemUrl);
+            log.warn("Firebase não inicializado. Ignorando deleção.");
             return;
         }
 
         try {
-            if (storage == null) {
-                storage = StorageOptions.getDefaultInstance().getService();
-            }
+            // --> USANDO O ADMIN SDK CORRETAMENTE
+            Bucket bucket = StorageClient.getInstance().bucket(bucketName);
 
-            // Extrair o nome do arquivo da URL
-            // Exemplo: https://storage.googleapis.com/bucket-name/tickets/uuid.jpg
+            // Descobre o caminho do arquivo no Storage
             String[] parts = imagemUrl.split("/");
-            if (parts.length < 2) {
-                log.warn("URL inválida para deletar: {}", imagemUrl);
-                return;
-            }
-
             String nomeArquivo = parts[parts.length - 1];
             String caminhoCompleto = "tickets/" + nomeArquivo;
 
             log.info("Deletando imagem: {}", caminhoCompleto);
 
-            // Deletar do Firebase
-            boolean deleted = storage.delete(bucketName, caminhoCompleto);
+            // Deletar arquivo
+            boolean deleted = bucket.get(caminhoCompleto).delete();
 
             if (deleted) {
                 log.info("✓ Imagem deletada com sucesso: {}", caminhoCompleto);
             } else {
-                log.warn("Imagem não encontrada no Firebase: {}", caminhoCompleto);
+                log.warn("Imagem não encontrada no bucket: {}", caminhoCompleto);
             }
 
         } catch (Exception e) {
-            log.error("Erro ao deletar imagem do Firebase: {}", e.getMessage());
-            // Não lançar exceção para não bloquear outras operações
+            log.error("Erro ao deletar imagem: {}", e.getMessage(), e);
         }
     }
 
