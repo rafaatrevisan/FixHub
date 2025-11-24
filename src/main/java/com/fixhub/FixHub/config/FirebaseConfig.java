@@ -44,7 +44,8 @@ public class FirebaseConfig {
                 // Prioridade 1: JSON inline (variável de ambiente ou application.properties)
                 if (credentialsJson != null && !credentialsJson.trim().isEmpty()) {
                     log.info("✓ Usando credenciais Firebase via JSON inline");
-                    serviceAccount = new ByteArrayInputStream(credentialsJson.getBytes());
+                    String fixedJson = credentialsJson.replace("\n", "\n");
+                    serviceAccount = new ByteArrayInputStream(fixedJson.getBytes());
                 }
                 // Prioridade 2: Arquivo externo (caminho absoluto)
                 else if (credentialsPath != null && !credentialsPath.trim().isEmpty()) {
