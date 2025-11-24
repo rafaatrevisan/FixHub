@@ -6,6 +6,7 @@ import com.google.firebase.FirebaseOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
 import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
@@ -44,13 +45,12 @@ public class FirebaseConfig {
                 // Prioridade 1: JSON inline (variável de ambiente ou application.properties)
                 if (credentialsJson != null && !credentialsJson.trim().isEmpty()) {
                     log.info("✓ Usando credenciais Firebase via JSON inline");
-                    String fixedJson = credentialsJson.replace("\n", "\n");
-                    serviceAccount = new ByteArrayInputStream(fixedJson.getBytes());
+                    serviceAccount = new ClassPathResource("firebase-credentials.json").getInputStream();
                 }
                 // Prioridade 2: Arquivo externo (caminho absoluto)
                 else if (credentialsPath != null && !credentialsPath.trim().isEmpty()) {
                     log.info("✓ Usando credenciais Firebase do arquivo: {}", credentialsPath);
-                    serviceAccount = new FileInputStream(credentialsPath);
+                    serviceAccount = new ClassPathResource("firebase-credentials.json").getInputStream();
                 }
                 else {
                     log.error("Nenhuma credencial Firebase configurada!");
