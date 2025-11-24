@@ -13,8 +13,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -28,12 +30,27 @@ public class TicketService {
     private final ResolucaoTicketRepository resolucaoTicketRepository;
     private final LixeiraRepository lixeiraRepository;
     private final GeminiService geminiService;
+    private final FirebaseStorageService firebaseStorageService;
     private final AuthUtil authUtil;
 
-    public Ticket criarTicket(Ticket ticket) {
-        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
+    public Ticket criarTicket(
+            String andar,
+            String localizacao,
+            String descricaoLocalizacao,
+            String descricaoTicketUsuario,
+            MultipartFile imagem,
+            Pessoa usuario
+    ) throws IOException {
+        // Upload da imagem para Firebase (se fornecida)
+        String imagemUrl = firebaseStorageService.uploadImagem(imagem);
 
-        ticket.setUsuario(usuarioLogado);
+        Ticket ticket = new Ticket();
+        ticket.setAndar(andar);
+        ticket.setLocalizacao(localizacao);
+        ticket.setDescricaoLocalizacao(descricaoLocalizacao);
+        ticket.setDescricaoTicketUsuario(descricaoTicketUsuario);
+        ticket.setImagem(imagemUrl);
+        ticket.setUsuario(usuario);
         ticket.setStatus(StatusTicket.PENDENTE);
 
         LocalDateTime inicio = LocalDateTime.now().minusHours(24);
@@ -47,7 +64,6 @@ public class TicketService {
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
             ticket.setTicketMestre(mestre);
-
             ticket.setPrioridade(mestre.getPrioridade());
             ticket.setEquipeResponsavel(mestre.getEquipeResponsavel());
             ticket.setStatus(mestre.getStatus());
@@ -73,7 +89,6 @@ public class TicketService {
 
             ticketMestreRepository.save(novoMestre);
             ticket.setTicketMestre(novoMestre);
-
             ticket.setPrioridade(resultadoIA.prioridade());
             ticket.setEquipeResponsavel(resultadoIA.equipeResponsavel());
         }
@@ -81,50 +96,72 @@ public class TicketService {
         return ticketRepository.save(ticket);
     }
 
-    public Ticket atualizarTicket(Integer id, Ticket ticketAtualizado) {
-        Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
-
-        return ticketRepository.findById(id)
-                .map(ticketExistente -> {
-                    if (!ticketExistente.getUsuario().getId().equals(usuarioLogado.getId())) {
-                        throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você só pode atualizar seus próprios tickets");
-                    }
-
-                    if (ticketExistente.getStatus() != StatusTicket.PENDENTE) {
-                        throw new IllegalStateException("O ticket deve estar pendente para ser atualizado");
-                    }
-
-                    boolean mesmoProblema = geminiService.mesmoProblema(ticketExistente, ticketAtualizado);
-                    if (!mesmoProblema) {
-                        throw new IllegalStateException(
-                                "Erro ao atualizar ticket! Para reportar um problema diferente, " +
-                                        "você deve excluir este ticket já existente e abrir outro."
-                        );
-                    }
-
-                    ticketExistente.setUsuario(usuarioLogado);
-                    ticketExistente.setAndar(ticketAtualizado.getAndar());
-                    ticketExistente.setLocalizacao(ticketAtualizado.getLocalizacao());
-                    ticketExistente.setDescricaoLocalizacao(ticketAtualizado.getDescricaoLocalizacao());
-                    ticketExistente.setDescricaoTicketUsuario(ticketAtualizado.getDescricaoTicketUsuario());
-                    ticketExistente.setImagem(ticketAtualizado.getImagem());
-
-                    GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
-                            ticketExistente.getDescricaoTicketUsuario(),
-                            ticketExistente.getLocalizacao(),
-                            ticketExistente.getDescricaoLocalizacao(),
-                            ticketExistente.getAndar()
-                    );
-
-                    ticketExistente.setPrioridade(resultadoIA.prioridade());
-                    ticketExistente.setEquipeResponsavel(resultadoIA.equipeResponsavel());
-
-                    return ticketRepository.save(ticketExistente);
-                })
+    public Ticket atualizarTicket(
+            Integer id,
+            String andar,
+            String localizacao,
+            String descricaoLocalizacao,
+            String descricaoTicketUsuario,
+            MultipartFile imagem,
+            Pessoa usuario
+    ) throws IOException {
+        Ticket ticketExistente = ticketRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket não encontrado"));
+
+        if (!ticketExistente.getUsuario().getId().equals(usuario.getId())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Você só pode atualizar seus próprios tickets");
+        }
+
+        if (ticketExistente.getStatus() != StatusTicket.PENDENTE) {
+            throw new IllegalStateException("O ticket deve estar pendente para ser atualizado");
+        }
+
+        // Criar ticket temporário para comparação
+        Ticket ticketAtualizado = new Ticket();
+        ticketAtualizado.setAndar(andar);
+        ticketAtualizado.setLocalizacao(localizacao);
+        ticketAtualizado.setDescricaoLocalizacao(descricaoLocalizacao);
+        ticketAtualizado.setDescricaoTicketUsuario(descricaoTicketUsuario);
+
+        boolean mesmoProblema = geminiService.mesmoProblema(ticketExistente, ticketAtualizado);
+        if (!mesmoProblema) {
+            throw new IllegalStateException(
+                    "Erro ao atualizar ticket! Para reportar um problema diferente, " +
+                            "você deve excluir este ticket já existente e abrir outro."
+            );
+        }
+
+        // Se houver nova imagem, deletar a antiga e fazer upload da nova
+        String novaImagemUrl = null;
+        if (imagem != null && !imagem.isEmpty()) {
+            if (ticketExistente.getImagem() != null) {
+                firebaseStorageService.deletarImagem(ticketExistente.getImagem());
+            }
+            novaImagemUrl = firebaseStorageService.uploadImagem(imagem);
+        }
+
+        ticketExistente.setUsuario(usuario);
+        ticketExistente.setAndar(andar);
+        ticketExistente.setLocalizacao(localizacao);
+        ticketExistente.setDescricaoLocalizacao(descricaoLocalizacao);
+        ticketExistente.setDescricaoTicketUsuario(descricaoTicketUsuario);
+        if (novaImagemUrl != null) {
+            ticketExistente.setImagem(novaImagemUrl);
+        }
+
+        GeminiService.GeminiResult resultadoIA = geminiService.avaliarTicket(
+                ticketExistente.getDescricaoTicketUsuario(),
+                ticketExistente.getLocalizacao(),
+                ticketExistente.getDescricaoLocalizacao(),
+                ticketExistente.getAndar()
+        );
+
+        ticketExistente.setPrioridade(resultadoIA.prioridade());
+        ticketExistente.setEquipeResponsavel(resultadoIA.equipeResponsavel());
+
+        return ticketRepository.save(ticketExistente);
     }
 
-    // Método para que um usuário possa excluir um ticket que ele abriu sem querer ou que tenha informações erradas (apenas se ainda estiver pendente)
     public void deleteTicket(Integer id) {
         Pessoa usuarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -137,6 +174,11 @@ public class TicketService {
 
         if (ticket.getStatus() != StatusTicket.PENDENTE) {
             throw new IllegalStateException("Somente tickets pendentes podem ser excluídos");
+        }
+
+        // Deletar imagem do Firebase se existir
+        if (ticket.getImagem() != null) {
+            firebaseStorageService.deletarImagem(ticket.getImagem());
         }
 
         TicketMestre mestre = ticket.getTicketMestre();
@@ -286,5 +328,4 @@ public class TicketService {
 
         return ticketRepository.findAll(spec);
     }
-
 }
