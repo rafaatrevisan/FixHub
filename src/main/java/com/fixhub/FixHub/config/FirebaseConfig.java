@@ -6,12 +6,11 @@ import com.google.firebase.FirebaseOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.io.ClassPathResource;
 
 import javax.annotation.PostConstruct;
 import java.io.ByteArrayInputStream;
-import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Configuration
@@ -23,10 +22,8 @@ public class FirebaseConfig {
     @Value("${firebase.storage.enabled:false}")
     private boolean firebaseEnabled;
 
+    // → AGORA ESTA VARIÁVEL RECEBE O JSON COMPLETO
     @Value("${firebase.credentials.path:}")
-    private String credentialsPath;
-
-    @Value("${firebase.credentials.json:}")
     private String credentialsJson;
 
     @PostConstruct
@@ -40,28 +37,17 @@ public class FirebaseConfig {
             try {
                 log.info("Inicializando Firebase Storage...");
 
-                InputStream serviceAccount = null;
-
-                // Prioridade 1: JSON inline (variável de ambiente ou application.properties)
-                if (credentialsJson != null && !credentialsJson.trim().isEmpty()) {
-                    log.info("✓ Usando credenciais Firebase via JSON inline");
-                    String path = credentialsPath.replace("classpath:", "");
-                    serviceAccount = new ClassPathResource(path).getInputStream();
-                }
-                // Prioridade 2: Arquivo externo (caminho absoluto)
-                else if (credentialsPath != null && !credentialsPath.trim().isEmpty()) {
-                    log.info("✓ Usando credenciais Firebase do arquivo: {}", credentialsPath);
-                    String path = credentialsPath.replace("classpath:", "");
-                    serviceAccount = new ClassPathResource(path).getInputStream();
-                }
-                else {
+                if (credentialsJson == null || credentialsJson.trim().isEmpty()) {
                     log.error("Nenhuma credencial Firebase configurada!");
-                    log.error("Configure uma das opções no application.properties:");
-                    log.error("  1. firebase.credentials.path=C:/firebase/firebase-credentials.json");
-                    log.error("  2. firebase.credentials.json=${FIREBASE_CREDENTIALS_JSON}");
-                    log.warn("A aplicação continuará sem Firebase Storage");
+                    log.error("Defina a variável FIREBASE_CREDENTIALS com o JSON do service account");
                     return;
                 }
+
+                log.info("✓ Usando credenciais Firebase via variável de ambiente");
+
+                // Converte a STRING JSON em stream
+                InputStream serviceAccount =
+                        new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8));
 
                 FirebaseOptions options = FirebaseOptions.builder()
                         .setCredentials(GoogleCredentials.fromStream(serviceAccount))
