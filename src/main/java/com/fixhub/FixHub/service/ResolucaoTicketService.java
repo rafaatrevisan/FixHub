@@ -136,41 +136,34 @@ public class ResolucaoTicketService {
     /**
      * Reprovar um TicketMestre.
      */
-    public ResolucaoTicket reprovarTicket(Integer idTicketMestre) {
+    public ResolucaoTicket reprovarTicket(ResolucaoTicketRequestDTO dto) {
         Pessoa funcionarioLogado = authUtil.getPessoaUsuarioLogado();
 
-        TicketMestre mestre = ticketMestreRepository.findById(idTicketMestre)
+        TicketMestre mestre = ticketMestreRepository.findById(dto.getIdTicket())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ticket Mestre não encontrado"));
 
         if (mestre.getStatus() != StatusTicket.EM_ANDAMENTO) {
             throw new IllegalStateException("Somente tickets mestres em andamento podem ser reprovados.");
         }
 
+        ResolucaoTicket resolucaoExistente = resolucaoTicketRepository
+                .findByTicketIdAndFuncionarioId(mestre.getId(), funcionarioLogado.getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não assumiu este ticket mestre."));
+
         mestre.setStatus(StatusTicket.REPROVADO);
         mestre.setDataAtualizacao(LocalDateTime.now());
         ticketMestreRepository.save(mestre);
 
         List<Ticket> ticketsVinculados = ticketRepository.findByTicketMestreId(mestre.getId());
-        ResolucaoTicket ultimaResolucao = null;
-
         for (Ticket t : ticketsVinculados) {
             t.setStatus(StatusTicket.REPROVADO);
             t.setDataAtualizacao(LocalDateTime.now());
             ticketRepository.save(t);
-
-            ResolucaoTicket resolucao = resolucaoTicketRepository
-                    .findByTicketIdAndFuncionarioId(mestre.getId(), funcionarioLogado.getId())
-                    .orElse(ResolucaoTicket.builder()
-                            .ticket(mestre)
-                            .funcionario(funcionarioLogado)
-                            .descricao("")
-                            .build());
-
-            resolucao.setDescricao("Ticket fake/incoerente");
-            resolucao.setDataResolucao(LocalDateTime.now());
-            ultimaResolucao = resolucaoTicketRepository.save(resolucao);
         }
 
-        return ultimaResolucao;
+        resolucaoExistente.setDescricao(dto.getDescricao());
+        resolucaoExistente.setDataResolucao(LocalDateTime.now());
+
+        return resolucaoTicketRepository.save(resolucaoExistente);
     }
 }

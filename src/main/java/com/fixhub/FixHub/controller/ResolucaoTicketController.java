@@ -32,8 +32,8 @@ public class ResolucaoTicketController {
 
     @PostMapping("/reprovar")
     public ResponseEntity<ResolucaoTicketResponseDTO> reprovarTicket(
-            @RequestParam Integer idTicketMestre) {
-        ResolucaoTicket resolucao = resolucaoService.reprovarTicket(idTicketMestre);
+            @RequestBody ResolucaoTicketRequestDTO dto) {
+        ResolucaoTicket resolucao = resolucaoService.reprovarTicket(dto);
         return ResponseEntity.ok(ResolucaoTicketMapper.toDTO(resolucao));
     }
 
