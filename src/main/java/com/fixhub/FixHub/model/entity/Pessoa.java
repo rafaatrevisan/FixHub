@@ -54,6 +54,9 @@ public class Pessoa {
     @Column(name = "usuario_alterador")
     private Integer usuarioAlterador;
 
+    @Column(name = "tickets_fakes")
+    private Integer ticketsFakes;
+
     @PrePersist
     protected void onCreate() {
         this.dataCadastro = LocalDateTime.now();

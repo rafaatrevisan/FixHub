@@ -50,6 +50,12 @@ public class AuthController {
             Pessoa pessoa = usuario.getPessoa();
             Cargo cargo = pessoa.getCargo();
 
+            if (!usuario.getAtivo() || !pessoa.isAtivo()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Conta desativada. Entre em contato com o suporte.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
+
             String token = jwtUtil.generateToken(email);
 
             Map<String, Object> response = new HashMap<>();
@@ -89,6 +95,12 @@ public class AuthController {
 
             Pessoa pessoa = usuario.getPessoa();
             Cargo cargo = pessoa.getCargo();
+
+            if (!usuario.getAtivo() || !pessoa.isAtivo()) {
+                Map<String, String> error = new HashMap<>();
+                error.put("error", "Conta desativada. Entre em contato com o suporte.");
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+            }
 
             if (cargo != Cargo.GERENTE && cargo != Cargo.SUPORTE) {
                 Map<String, String> error = new HashMap<>();

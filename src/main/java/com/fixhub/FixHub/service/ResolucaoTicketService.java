@@ -1,15 +1,10 @@
 package com.fixhub.FixHub.service;
 
 import com.fixhub.FixHub.model.dto.ResolucaoTicketRequestDTO;
-import com.fixhub.FixHub.model.entity.Pessoa;
-import com.fixhub.FixHub.model.entity.ResolucaoTicket;
-import com.fixhub.FixHub.model.entity.Ticket;
-import com.fixhub.FixHub.model.entity.TicketMestre;
+import com.fixhub.FixHub.model.entity.*;
 import com.fixhub.FixHub.model.enums.Cargo;
 import com.fixhub.FixHub.model.enums.StatusTicket;
-import com.fixhub.FixHub.model.repository.ResolucaoTicketRepository;
-import com.fixhub.FixHub.model.repository.TicketMestreRepository;
-import com.fixhub.FixHub.model.repository.TicketRepository;
+import com.fixhub.FixHub.model.repository.*;
 import com.fixhub.FixHub.util.AuthUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -26,6 +21,9 @@ public class ResolucaoTicketService {
     private final TicketRepository ticketRepository;
     private final TicketMestreRepository ticketMestreRepository;
     private final ResolucaoTicketRepository resolucaoTicketRepository;
+    private final PessoaRepository pessoaRepository;
+    private final UsuarioRepository usuarioRepository;
+    private final LogTicketFakeRepository logTicketFakeRepository;
     private final AuthUtil authUtil;
 
     /**
@@ -133,9 +131,6 @@ public class ResolucaoTicketService {
         return resolucaoTicketRepository.save(resolucaoExistente);
     }
 
-    /**
-     * Reprovar um TicketMestre.
-     */
     public ResolucaoTicket reprovarTicket(ResolucaoTicketRequestDTO dto) {
         Pessoa funcionarioLogado = authUtil.getPessoaUsuarioLogado();
 
@@ -149,6 +144,39 @@ public class ResolucaoTicketService {
         ResolucaoTicket resolucaoExistente = resolucaoTicketRepository
                 .findByTicketIdAndFuncionarioId(mestre.getId(), funcionarioLogado.getId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.FORBIDDEN, "Você não assumiu este ticket mestre."));
+
+        // Busca um dos tickets vinculados para saber quem é o autor do chamado
+        Ticket ticketOriginal = ticketRepository.findFirstByTicketMestreId(mestre.getId())
+                .orElseThrow(() -> new IllegalStateException("Nenhum ticket encontrado para este ticket mestre."));
+
+        Pessoa usuarioQueCriou = ticketOriginal.getUsuario();
+
+        int novosFakes = usuarioQueCriou.getTicketsFakes() + 1;
+        usuarioQueCriou.setTicketsFakes(novosFakes);
+
+        LogTicketFake log = LogTicketFake.builder()
+                .pessoa(usuarioQueCriou)
+                .ticketMestre(mestre)
+                .funcionario(funcionarioLogado)
+                .motivo("Ticket reprovado por improcedência. Motivo: " + dto.getDescricao())
+                .dataRegistro(LocalDateTime.now())
+                .build();
+
+        logTicketFakeRepository.save(log);
+
+        // Se chegou a 5 ou mais → desativar pessoa + desativar usuário
+        if (novosFakes >= 5) {
+            usuarioQueCriou.setAtivo(false);
+
+            usuarioRepository.findByPessoaId(usuarioQueCriou.getId())
+                    .ifPresent(u -> {
+                        u.setAtivo(false);
+                        usuarioRepository.save(u);
+                    });
+        }
+
+        pessoaRepository.save(usuarioQueCriou);
+
 
         mestre.setStatus(StatusTicket.REPROVADO);
         mestre.setDataAtualizacao(LocalDateTime.now());
