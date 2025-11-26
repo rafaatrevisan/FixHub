@@ -23,5 +23,6 @@ public class RelatorioTicketsDTO {
     private LocalDateTime dataCriacao;
     private LocalDateTime dataResolucao;
     private String funcionarioResponsavel;
+    private String descricaoResolucao;
     private Long tempoResolucao;
 }

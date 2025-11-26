@@ -154,12 +154,15 @@ public class RelatorioService {
         String nomeFuncionario = null;
         LocalDateTime dataResolucao = null;
         Long tempoResolucao = null;
+        String descricaoResolucao = null;
 
         if (resolucao != null) {
             nomeFuncionario = resolucao.getFuncionario() != null
                     ? resolucao.getFuncionario().getNome()
                     : null;
+
             dataResolucao = resolucao.getDataResolucao();
+            descricaoResolucao = resolucao.getDescricao();
 
             if (dataResolucao != null && ticket.getDataCriacaoTicket() != null) {
                 tempoResolucao = ChronoUnit.MINUTES.between(
@@ -176,6 +179,7 @@ public class RelatorioService {
         return RelatorioTicketsDTO.builder()
                 .id(Long.valueOf(ticket.getId()))
                 .descricao(ticket.getDescricaoTicketUsuario())
+                .descricaoResolucao(descricaoResolucao)
                 .status(ticket.getStatus())
                 .prioridade(ticket.getPrioridade())
                 .equipeResponsavel(ticket.getEquipeResponsavel())
@@ -209,7 +213,7 @@ public class RelatorioService {
             baos.write(0xBB);
             baos.write(0xBF);
 
-            writer.println("ID;Descrição;Status;Prioridade;Equipe;Funcionário;Data Criação;Data Resolução;Tempo (min)");
+            writer.println("ID;Descrição;Status;Prioridade;Equipe;Funcionário;Data Criação;Data Resolução;Descrição Resolução;Tempo (min)");
 
             for (RelatorioTicketsDTO ticket : tickets) {
                 writer.println(formatarLinhaCSV(ticket));
@@ -228,7 +232,7 @@ public class RelatorioService {
      * Formata linha do CSV
      */
     private String formatarLinhaCSV(RelatorioTicketsDTO ticket) {
-        return String.format("%d;%s;%s;%s;%s;%s;%s;%s;%s",
+        return String.format("%d;%s;%s;%s;%s;%s;%s;%s;%s;%s",
                 ticket.getId(),
                 escaparCSV(ticket.getDescricao()),
                 ticket.getStatus() != null ? ticket.getStatus().name().replace("_", " ") : "",
@@ -237,6 +241,7 @@ public class RelatorioService {
                 escaparCSV(ticket.getFuncionarioResponsavel()),
                 ticket.getDataCriacao() != null ? ticket.getDataCriacao().format(DATE_FORMATTER) : "",
                 ticket.getDataResolucao() != null ? ticket.getDataResolucao().format(DATE_FORMATTER) : "",
+                escaparCSV(ticket.getDescricaoResolucao()),
                 ticket.getTempoResolucao() != null ? ticket.getTempoResolucao().toString() : ""
         );
     }
