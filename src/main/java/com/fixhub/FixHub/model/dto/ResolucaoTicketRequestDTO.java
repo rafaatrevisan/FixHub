@@ -11,6 +11,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ResolucaoTicketRequestDTO {
     private Integer idTicket;
-    private Integer idFuncionario;
     private String descricao;
 }

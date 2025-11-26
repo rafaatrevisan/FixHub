@@ -1,5 +1,6 @@
 package com.fixhub.FixHub.controller;
 
+import com.fixhub.FixHub.model.dto.TicketMestreDetalhesDTO;
 import com.fixhub.FixHub.model.entity.TicketMestre;
 import com.fixhub.FixHub.model.enums.PrioridadeTicket;
 import com.fixhub.FixHub.model.enums.StatusTicket;
@@ -37,8 +38,8 @@ public class TicketMestreController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<TicketMestre> buscarPorId(@PathVariable Integer id) {
-        TicketMestre ticket = ticketMestreService.buscarTicketMestrePorId(id);
+    public ResponseEntity<TicketMestreDetalhesDTO> buscarPorId(@PathVariable Integer id) {
+        TicketMestreDetalhesDTO ticket = ticketMestreService.buscarTicketMestrePorId(id);
         return ResponseEntity.ok(ticket);
     }
 }

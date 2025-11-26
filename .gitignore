@@ -33,4 +33,5 @@ build/
 .vscode/
 
 # Arquivo com dados sensíveis (API Key)
-/src/main/resources/application-example.properties
+/src/main/resources/application-local.properties
+firebase-service-account.json
